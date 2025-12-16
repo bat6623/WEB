@@ -63,7 +63,10 @@ const decodeAudioData = async (
 // --- App Components ---
 
 const App = () => {
-  const [apiKey] = useState(process.env.API_KEY || "");
+  // Allow setting API key from state if not found in env
+  const [apiKey, setApiKey] = useState(process.env.API_KEY || "");
+  const [inputKey, setInputKey] = useState("");
+  
   const [screen, setScreen] = useState<"home" | "loading" | "learn" | "quiz">("home");
   const [category, setCategory] = useState("");
   const [vocabList, setVocabList] = useState<VocabWord[]>([]);
@@ -153,14 +156,47 @@ const App = () => {
     setVocabList([]);
   };
 
+  // --- Login Screen (API Key Input) ---
   if (!apiKey) {
     return (
       <div style={styles.container}>
-        <h1>請設定 API Key</h1>
+         <div style={styles.centerContent}>
+            <div style={styles.flashCard}>
+              <h1 style={{...styles.title, fontSize: '28px'}}>🌟 Happy English</h1>
+              <p style={{marginBottom: '20px', color: '#666', textAlign: 'center'}}>
+                請輸入您的 Google Gemini API Key 開始學習！
+                <br/>
+                (Please enter your API Key to start)
+              </p>
+              <input 
+                type="password" 
+                placeholder="Paste API Key here..."
+                style={styles.input}
+                value={inputKey}
+                onChange={(e) => setInputKey(e.target.value)}
+              />
+              <button 
+                style={styles.bigButton} 
+                onClick={() => setApiKey(inputKey)}
+                disabled={!inputKey.trim()}
+              >
+                開始 (Start) 🚀
+              </button>
+              <a 
+                href="https://aistudio.google.com/app/apikey" 
+                target="_blank" 
+                rel="noreferrer"
+                style={{marginTop: '20px', color: '#888', fontSize: '12px'}}
+              >
+                取得 API Key (Get API Key)
+              </a>
+            </div>
+         </div>
       </div>
     );
   }
 
+  // --- Main App Screen ---
   return (
     <div style={styles.container}>
       <header style={styles.header}>
@@ -697,12 +733,23 @@ const styles: Record<string, React.CSSProperties> = {
     fontSize: "20px",
     fontWeight: "bold",
     boxShadow: "0 5px 0 #C2185B",
+    marginTop: "20px",
   },
   error: {
     marginTop: "20px",
     color: "red",
     textAlign: "center",
-  }
+  },
+  input: {
+    width: "100%",
+    padding: "15px",
+    borderRadius: "15px",
+    border: "2px solid #ddd",
+    fontSize: "16px",
+    outline: "none",
+    textAlign: "center",
+    backgroundColor: "#FAFAFA",
+  },
 };
 
 const root = createRoot(document.getElementById("root")!);
