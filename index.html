@@ -50,11 +50,17 @@
     </script>
     <!-- Polyfill for process.env (Required for browser-only environment) -->
     <script>
+      // ------------------------------------------------------------------
+      // 設定 API Key 的位置 / Set your API Key here
+      // 如果您想固定 Key 不用每次輸入，請填入下方的引號中：
+      const HARDCODED_API_KEY = "AIzaSyAjakYb3aUajGrO5ikloXGtGwEdm6MehbE"; 
+      // ------------------------------------------------------------------
+
       window.process = {
         env: {
           NODE_ENV: 'development',
-          // Allows providing API key via URL parameter ?key=... for GitHub Pages testing
-          API_KEY: new URLSearchParams(window.location.search).get("key") || "" 
+          // 優先順序：程式碼寫死 > 網址參數 > 空字串 (等待使用者輸入)
+          API_KEY: HARDCODED_API_KEY || new URLSearchParams(window.location.search).get("key") || "" 
         }
       };
     </script>
