@@ -37,20 +37,40 @@
         border-radius: 5px;
       }
     </style>
-  <script type="importmap">
-{
-  "imports": {
-    "react-dom/": "https://esm.sh/react-dom@^19.2.3/",
-    "@google/genai": "https://esm.sh/@google/genai@^1.33.0",
-    "react": "https://esm.sh/react@^19.2.3",
-    "react/": "https://esm.sh/react@^19.2.3/"
-  }
-}
-</script>
-<link rel="stylesheet" href="/index.css">
+    <!-- Import Map for React and GenAI SDK -->
+    <script type="importmap">
+    {
+      "imports": {
+        "react-dom/": "https://esm.sh/react-dom@^19.2.3/",
+        "@google/genai": "https://esm.sh/@google/genai@^1.33.0",
+        "react": "https://esm.sh/react@^19.2.3",
+        "react/": "https://esm.sh/react@^19.2.3/"
+      }
+    }
+    </script>
+    <!-- Polyfill for process.env (Required for browser-only environment) -->
+    <script>
+      window.process = {
+        env: {
+          NODE_ENV: 'development',
+          // Allows providing API key via URL parameter ?key=... for GitHub Pages testing
+          API_KEY: new URLSearchParams(window.location.search).get("key") || "" 
+        }
+      };
+    </script>
+    <!-- Babel Standalone to compile TSX in the browser -->
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <link rel="stylesheet" href="/index.css">
 </head>
   <body>
     <div id="root"></div>
-    <script type="module" src="/index.tsx"></script>
-  </body>
+    <!-- 
+      Load index.tsx using Babel. 
+      type="text/babel" tells Babel to compile it.
+      data-type="module" preserves ES imports for the browser to handle via importmap.
+      data-presets="typescript,react" enables TS and JSX support.
+    -->
+    <script type="text/babel" data-type="module" data-presets="typescript,react" src="./index.tsx"></script>
+  <script type="module" src="/index.tsx"></script>
+</body>
 </html>
