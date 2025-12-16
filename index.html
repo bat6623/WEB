@@ -1,0 +1,713 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>岡山桃太郎之旅 | 豪華圖文版</title>
+    <!-- 引入 React 和 Tailwind -->
+    <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- 引入字體與自定義樣式 -->
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700&family=Shippori+Mincho:wght@400;700&display=swap');
+        
+        body {
+            font-family: 'Noto Sans TC', sans-serif;
+            background-color: #fcfaf8;
+            color: #4a4a4a;
+        }
+        
+        .font-serif { font-family: 'Shippori Mincho', serif; }
+        .scrollbar-hide::-webkit-scrollbar { display: none; }
+        .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
+        
+        .fade-in { animation: fadeIn 0.4s ease-out forwards; opacity: 0; transform: translateY(10px); }
+        @keyframes fadeIn { to { opacity: 1; transform: translateY(0); } }
+
+        .glass-card {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(8px);
+            border: 1px solid rgba(255, 255, 255, 0.5);
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+            transition: all 0.2s ease;
+            overflow: hidden;
+        }
+        
+        .dragging {
+            opacity: 0.5;
+            transform: scale(0.98);
+            box-shadow: 0 10px 20px rgba(0,0,0,0.1);
+            border: 2px dashed #fecaca;
+        }
+
+        .edit-input {
+            background: rgba(255,255,255,0.8);
+            border: 1px solid #e5e7eb;
+            border-radius: 6px;
+            padding: 4px 8px;
+            width: 100%;
+            transition: all 0.2s;
+        }
+        .edit-input:focus {
+            outline: none;
+            border-color: #fecaca;
+            box-shadow: 0 0 0 2px rgba(254, 202, 202, 0.3);
+        }
+        
+        .jr-badge {
+            background: #15803d;
+            color: white;
+            font-size: 0.65rem;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-weight: bold;
+            letter-spacing: 0.05em;
+            display: inline-flex;
+            align-items: center;
+            gap: 2px;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+        }
+
+        .cost-panel {
+            background: rgba(30, 41, 59, 0.95);
+            backdrop-filter: blur(10px);
+            color: white;
+            box-shadow: 0 -4px 20px rgba(0,0,0,0.2);
+            border: 1px solid rgba(255,255,255,0.1);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        /* 圖片容器樣式 */
+        .card-image-container {
+            height: 140px;
+            width: 100%;
+            overflow: hidden;
+            position: relative;
+            background-color: #f3f4f6;
+        }
+        .card-image {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            transition: transform 0.5s ease;
+        }
+        .glass-card:hover .card-image {
+            transform: scale(1.05);
+        }
+    </style>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        'momo-pink': '#fecaca',
+                        'momo-red': '#f43f5e',
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body>
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect, useRef, useMemo } = React;
+
+        // 輔助函數：自動生成圖片網址
+        const getAutoImageUrl = (name) => {
+            const cleanName = name.split(':')[0].replace(/[:\/]/g, ' ').split(' ')[0];
+            return `https://loremflickr.com/400/200/japan,travel,${encodeURIComponent(cleanName)}/all?lock=${Math.floor(Math.random()*100)}`;
+        };
+
+        // 預設資料 (已加入詳細地址)
+        const defaultItineraryData = [
+            {
+                day: 1,
+                title: "抵達岡山",
+                subtitle: "桃太郎的故鄉",
+                locations: [
+                    { id: 101, time: "下午", name: "岡山機場 → 岡山站", address: "岡山県岡山市北区日応寺1277", type: "transport", cost: 780, jrPass: false, note: "利木津巴士", image: "https://upload.wikimedia.org/wikipedia/commons/thumb/6/66/Okayama_Airport_20230812.jpg/640px-Okayama_Airport_20230812.jpg" },
+                    { id: 102, time: "Check-in", name: "Regalo Hotel Okayama", address: "岡山県岡山市北区本町8-3", type: "stay", cost: 0, jrPass: false, note: "站前便利住宿", image: "https://upload.wikimedia.org/wikipedia/commons/thumb/6/6a/Okayama_Station_East_Side.jpg/640px-Okayama_Station_East_Side.jpg" },
+                    { id: 103, time: "晚餐", name: "400℃ PIZZA", address: "岡山県岡山市北区杜の街グレース", type: "food", cost: 0, jrPass: false, note: "高人氣披薩", image: "https://upload.wikimedia.org/wikipedia/commons/thumb/a/a3/Eq_it-na_pizza-margherita_sep2005_sml.jpg/640px-Eq_it-na_pizza-margherita_sep2005_sml.jpg" },
+                    { id: 104, time: "逛街", name: "岡山站前商店街", address: "岡山県岡山市北区駅前町", type: "activity", cost: 0, jrPass: false, note: "採買補給品", image: "https://upload.wikimedia.org/wikipedia/commons/thumb/c/cd/Okayama_Station_shopping_street.jpg/640px-Okayama_Station_shopping_street.jpg" },
+                    { id: 105, time: "晚上", name: "返回住宿: Regalo Hotel Okayama", address: "岡山県岡山市北区本町8-3", type: "transport", cost: 0, jrPass: false, note: "步行返回", image: "https://upload.wikimedia.org/wikipedia/commons/thumb/0/09/Okayama_Station_at_night.jpg/640px-Okayama_Station_at_night.jpg" }
+                ]
+            },
+            {
+                day: 2,
+                title: "倉敷美觀與吉備津",
+                subtitle: "白壁土藏與傳說之地",
+                locations: [
+                    { id: 200, time: "上午", name: "從住宿出發", address: "岡山県岡山市北区本町8-3", type: "transport", cost: 0, jrPass: false, note: "前往車站", image: "https://upload.wikimedia.org/wikipedia/commons/thumb/6/6a/Okayama_Station_East_Side.jpg/640px-Okayama_Station_East_Side.jpg" },
+                    { id: 201, time: "上午", name: "岡山 → 倉敷", address: "岡山県倉敷市阿知1丁目1-1", type: "transport", cost: 330, jrPass: true, note: "JR 山陽本線", image: "https://upload.wikimedia.org/wikipedia/commons/thumb/3/36/JR_West_KiHa_40_2000_KiBi_Line_Color.jpg/640px-JR_West_KiHa_40_2000_KiBi_Line_Color.jpg" },
+                    { id: 202, time: "午餐", name: "Kappa 炸豬排", address: "岡山県倉敷市阿知2-17-2", type: "food", cost: 0, jrPass: false, note: "倉敷名物", image: "https://upload.wikimedia.org/wikipedia/commons/thumb/c/c6/Tonkatsu_002.jpg/640px-Tonkatsu_002.jpg" },
+                    { id: 203, time: "散策", name: "倉敷美觀地區", address: "岡山県倉敷市中央1-4-8", type: "activity", cost: 0, jrPass: false, note: "小橋流水", image: "https://upload.wikimedia.org/wikipedia/commons/thumb/2/22/Kurashiki_Bikan04s3200.jpg/640px-Kurashiki_Bikan04s3200.jpg" },
+                    { id: 204, time: "下午", name: "倉敷 → 備前一宮", address: "岡山県岡山市北区一宮55-1", type: "transport", cost: 540, jrPass: true, note: "JR 轉乘", image: "https://upload.wikimedia.org/wikipedia/commons/thumb/3/36/JR_West_KiHa_40_2000_KiBi_Line_Color.jpg/640px-JR_West_KiHa_40_2000_KiBi_Line_Color.jpg" },
+                    { id: 205, time: "參拜", name: "吉備津神社", address: "岡山県岡山市北区吉備津931", type: "activity", cost: 0, jrPass: false, note: "桃太郎傳說", image: "https://upload.wikimedia.org/wikipedia/commons/thumb/f/f6/Kibitsu-jinja_02.jpg/640px-Kibitsu-jinja_02.jpg" },
+                    { id: 206, time: "傍晚", name: "備前一宮 → 岡山", address: "岡山県岡山市北区駅元町1-1", type: "transport", cost: 210, jrPass: true, note: "JR 吉備線", image: "https://upload.wikimedia.org/wikipedia/commons/thumb/3/36/JR_West_KiHa_40_2000_KiBi_Line_Color.jpg/640px-JR_West_KiHa_40_2000_KiBi_Line_Color.jpg" },
+                    { id: 207, time: "晚上", name: "返回住宿", address: "岡山県岡山市北区本町8-3", type: "transport", cost: 0, jrPass: false, note: "步行返回", image: "https://upload.wikimedia.org/wikipedia/commons/thumb/0/09/Okayama_Station_at_night.jpg/640px-Okayama_Station_at_night.jpg" }
+                ]
+            },
+            {
+                day: 3,
+                title: "直島藝術巡禮",
+                subtitle: "瀨戶內海的現代藝術",
+                locations: [
+                    { id: 300, time: "上午", name: "從住宿出發", address: "岡山県岡山市北区本町8-3", type: "transport", cost: 0, jrPass: false, note: "前往車站", image: "https://upload.wikimedia.org/wikipedia/commons/thumb/6/6a/Okayama_Station_East_Side.jpg/640px-Okayama_Station_East_Side.jpg" },
+                    { id: 301, time: "上午", name: "岡山 → 宇野港", address: "岡山県玉野市築港1-1", type: "transport", cost: 590, jrPass: true, note: "JR 宇野線", image: "https://upload.wikimedia.org/wikipedia/commons/thumb/3/36/JR_West_KiHa_40_2000_KiBi_Line_Color.jpg/640px-JR_West_KiHa_40_2000_KiBi_Line_Color.jpg" },
+                    { id: 302, time: "渡輪", name: "宇野 → 直島(宮浦)", address: "香川県香川郡直島町宮ノ浦", type: "transport", cost: 300, jrPass: false, note: "四國汽船 (Pass不含)", image: "https://upload.wikimedia.org/wikipedia/commons/thumb/f/f7/Shikoku_Kisen_Naoshima_Ferry_Asahi.jpg/640px-Shikoku_Kisen_Naoshima_Ferry_Asahi.jpg" },
+                    { id: 303, time: "地標", name: "直島赤南瓜", address: "香川県香川郡直島町宮ノ浦港", type: "activity", cost: 0, jrPass: false, note: "草間彌生", image: "https://upload.wikimedia.org/wikipedia/commons/thumb/1/1a/Red_Pumpkin_Naoshima.jpg/640px-Red_Pumpkin_Naoshima.jpg" },
+                    { id: 304, time: "渡輪", name: "直島 → 宇野", address: "岡山県玉野市築港1-1", type: "transport", cost: 300, jrPass: false, note: "回程渡輪", image: "https://upload.wikimedia.org/wikipedia/commons/thumb/f/f7/Shikoku_Kisen_Naoshima_Ferry_Asahi.jpg/640px-Shikoku_Kisen_Naoshima_Ferry_Asahi.jpg" },
+                    { id: 305, time: "晚上", name: "宇野 → 岡山", address: "岡山県岡山市北区駅元町1-1", type: "transport", cost: 590, jrPass: true, note: "JR 宇野線", image: "https://upload.wikimedia.org/wikipedia/commons/thumb/3/36/JR_West_KiHa_40_2000_KiBi_Line_Color.jpg/640px-JR_West_KiHa_40_2000_KiBi_Line_Color.jpg" },
+                    { id: 306, time: "晚上", name: "返回住宿", address: "岡山県岡山市北区本町8-3", type: "transport", cost: 0, jrPass: false, note: "步行返回", image: "https://upload.wikimedia.org/wikipedia/commons/thumb/0/09/Okayama_Station_at_night.jpg/640px-Okayama_Station_at_night.jpg" }
+                ]
+            },
+            {
+                day: 4,
+                title: "兔島與廣島",
+                subtitle: "毛茸茸與歷史的痕跡",
+                locations: [
+                    { id: 400, time: "上午", name: "從住宿出發", address: "岡山県岡山市北区本町8-3", type: "transport", cost: 0, jrPass: false, note: "辦理退房", image: "https://upload.wikimedia.org/wikipedia/commons/thumb/6/6a/Okayama_Station_East_Side.jpg/640px-Okayama_Station_East_Side.jpg" },
+                    { id: 401, time: "上午", name: "岡山 → 廣島", address: "広島県広島市南区松原町2-37", type: "transport", cost: 6230, jrPass: true, note: "新幹線", image: "https://upload.wikimedia.org/wikipedia/commons/thumb/d/d4/N700_Z1_Hiroshima_20090228.jpg/640px-N700_Z1_Hiroshima_20090228.jpg" },
+                    { id: 402, time: "移動", name: "廣島 → 忠海", address: "広島県竹原市忠海中町1-1", type: "transport", cost: 1490, jrPass: true, note: "JR 吳線", image: "https://upload.wikimedia.org/wikipedia/commons/thumb/d/d4/N700_Z1_Hiroshima_20090228.jpg/640px-N700_Z1_Hiroshima_20090228.jpg" },
+                    { id: 403, time: "渡輪", name: "忠海 → 大久野島", address: "広島県竹原市忠海町大久野島", type: "transport", cost: 370, jrPass: false, note: "單程船票", image: "https://upload.wikimedia.org/wikipedia/commons/thumb/f/f7/Shikoku_Kisen_Naoshima_Ferry_Asahi.jpg/640px-Shikoku_Kisen_Naoshima_Ferry_Asahi.jpg" },
+                    { id: 404, time: "體驗", name: "大久野島 (兔子島)", address: "広島県竹原市忠海町大久野島", type: "activity", cost: 0, jrPass: false, note: "與兔子互動", image: "https://upload.wikimedia.org/wikipedia/commons/thumb/f/f0/Okunoshima_Rabbit_2.jpg/640px-Okunoshima_Rabbit_2.jpg" },
+                    { id: 405, time: "移動", name: "忠海 → 廣島", address: "広島県広島市南区松原町2-37", type: "transport", cost: 1490, jrPass: true, note: "JR 吳線", image: "https://upload.wikimedia.org/wikipedia/commons/thumb/d/d4/N700_Z1_Hiroshima_20090228.jpg/640px-N700_Z1_Hiroshima_20090228.jpg" },
+                    { id: 406, time: "住宿", name: "Check-in: ORIGAMINN", address: "広島県広島市南区京橋町", type: "stay", cost: 0, jrPass: false, note: "廣島住宿", image: "https://upload.wikimedia.org/wikipedia/commons/thumb/5/53/Hiroshima_Station_South_Gate_2015.jpg/640px-Hiroshima_Station_South_Gate_2015.jpg" }
+                ]
+            },
+            {
+                day: 5,
+                title: "尾道與鞆之浦",
+                subtitle: "貓之細道與波妞的家",
+                locations: [
+                    { id: 500, time: "上午", name: "從住宿出發", address: "広島県広島市南区京橋町", type: "transport", cost: 0, jrPass: false, note: "前往車站", image: "https://upload.wikimedia.org/wikipedia/commons/thumb/5/53/Hiroshima_Station_South_Gate_2015.jpg/640px-Hiroshima_Station_South_Gate_2015.jpg" },
+                    { id: 501, time: "上午", name: "廣島 → 尾道", address: "広島県尾道市東御所町1-1", type: "transport", cost: 1500, jrPass: true, note: "JR 移動", image: "https://upload.wikimedia.org/wikipedia/commons/thumb/3/36/JR_West_KiHa_40_2000_KiBi_Line_Color.jpg/640px-JR_West_KiHa_40_2000_KiBi_Line_Color.jpg" },
+                    { id: 502, time: "纜車", name: "千光寺纜車", address: "広島県尾道市東土堂町20-1", type: "transport", cost: 500, jrPass: false, note: "單程", image: "https://upload.wikimedia.org/wikipedia/commons/thumb/8/87/Senkoji_Ropeway_02.jpg/640px-Senkoji_Ropeway_02.jpg" },
+                    { id: 503, time: "午餐", name: "尾道拉麵", address: "広島県尾道市土堂2-9-26", type: "food", cost: 0, jrPass: false, note: "壹番館", image: "https://upload.wikimedia.org/wikipedia/commons/thumb/d/dc/Onomichi_ramen.jpg/640px-Onomichi_ramen.jpg" },
+                    { id: 504, time: "移動", name: "尾道 → 福山", address: "広島県福山市三之丸町30-1", type: "transport", cost: 420, jrPass: true, note: "JR 山陽本線", image: "https://upload.wikimedia.org/wikipedia/commons/thumb/3/36/JR_West_KiHa_40_2000_KiBi_Line_Color.jpg/640px-JR_West_KiHa_40_2000_KiBi_Line_Color.jpg" },
+                    { id: 505, time: "巴士", name: "福山 → 鞆之浦", address: "広島県福山市鞆町鞆", type: "transport", cost: 550, jrPass: false, note: "鞆鐵巴士", image: "https://upload.wikimedia.org/wikipedia/commons/thumb/2/2b/Okaden_Bus_985_New_Aero_Star.jpg/640px-Okaden_Bus_985_New_Aero_Star.jpg" },
+                    { id: 506, time: "回程", name: "福山 → 廣島", address: "広島県広島市南区松原町2-37", type: "transport", cost: 4000, jrPass: true, note: "新幹線/JR", image: "https://upload.wikimedia.org/wikipedia/commons/thumb/d/d4/N700_Z1_Hiroshima_20090228.jpg/640px-N700_Z1_Hiroshima_20090228.jpg" },
+                    { id: 507, time: "晚上", name: "返回住宿", address: "広島県広島市南区京橋町", type: "transport", cost: 0, jrPass: false, note: "休息", image: "https://upload.wikimedia.org/wikipedia/commons/thumb/5/53/Hiroshima_Station_South_Gate_2015.jpg/640px-Hiroshima_Station_South_Gate_2015.jpg" }
+                ]
+            },
+            {
+                day: 6,
+                title: "宮島嚴島神社",
+                subtitle: "海上鳥居的神域",
+                locations: [
+                    { id: 600, time: "上午", name: "從住宿出發", address: "広島県広島市南区京橋町", type: "transport", cost: 0, jrPass: false, note: "前往車站", image: "https://upload.wikimedia.org/wikipedia/commons/thumb/5/53/Hiroshima_Station_South_Gate_2015.jpg/640px-Hiroshima_Station_South_Gate_2015.jpg" },
+                    { id: 601, time: "上午", name: "廣島 → 宮島口", address: "広島県廿日市市宮島口1-3-23", type: "transport", cost: 420, jrPass: true, note: "JR 山陽本線", image: "https://upload.wikimedia.org/wikipedia/commons/thumb/3/36/JR_West_KiHa_40_2000_KiBi_Line_Color.jpg/640px-JR_West_KiHa_40_2000_KiBi_Line_Color.jpg" },
+                    { id: 602, time: "渡輪", name: "宮島口 → 宮島", address: "広島県廿日市市宮島町", type: "transport", cost: 180, jrPass: true, note: "JR 渡輪", image: "https://upload.wikimedia.org/wikipedia/commons/thumb/4/47/JR_Miyajima_Ferry_Misen-maru_01.JPG/640px-JR_Miyajima_Ferry_Misen-maru_01.JPG" },
+                    { id: 603, time: "參拜", name: "嚴島神社", address: "広島県廿日市市宮島町1-1", type: "activity", cost: 300, jrPass: false, note: "海上鳥居", image: "https://upload.wikimedia.org/wikipedia/commons/thumb/0/02/Itsukushima_Gate.jpg/640px-Itsukushima_Gate.jpg" },
+                    { id: 604, time: "午餐", name: "宮島表參道商店街", address: "広島県廿日市市宮島町", type: "food", cost: 0, jrPass: false, note: "牡蠣、紅葉饅頭", image: "https://upload.wikimedia.org/wikipedia/commons/thumb/5/5e/Kaki_fry.jpg/640px-Kaki_fry.jpg" },
+                    { id: 605, time: "回程", name: "宮島 → 廣島", address: "広島県広島市南区松原町2-37", type: "transport", cost: 600, jrPass: true, note: "渡輪+JR", image: "https://upload.wikimedia.org/wikipedia/commons/thumb/4/47/JR_Miyajima_Ferry_Misen-maru_01.JPG/640px-JR_Miyajima_Ferry_Misen-maru_01.JPG" },
+                    { id: 606, time: "晚上", name: "返回住宿", address: "広島県広島市南区京橋町", type: "transport", cost: 0, jrPass: false, note: "休息", image: "https://upload.wikimedia.org/wikipedia/commons/thumb/5/53/Hiroshima_Station_South_Gate_2015.jpg/640px-Hiroshima_Station_South_Gate_2015.jpg" }
+                ]
+            },
+            {
+                day: 7,
+                title: "岡山城與賦歸",
+                subtitle: "黑色烏城與最後採買",
+                locations: [
+                    { id: 700, time: "上午", name: "從住宿出發", address: "広島県広島市南区京橋町", type: "transport", cost: 0, jrPass: false, note: "辦理退房", image: "https://upload.wikimedia.org/wikipedia/commons/thumb/5/53/Hiroshima_Station_South_Gate_2015.jpg/640px-Hiroshima_Station_South_Gate_2015.jpg" },
+                    { id: 701, time: "上午", name: "廣島 → 岡山", address: "岡山県岡山市北区駅元町1-1", type: "transport", cost: 6230, jrPass: true, note: "新幹線", image: "https://upload.wikimedia.org/wikipedia/commons/thumb/d/d4/N700_Z1_Hiroshima_20090228.jpg/640px-N700_Z1_Hiroshima_20090228.jpg" },
+                    { id: 702, time: "景點", name: "岡山城 & 後樂園", address: "岡山県岡山市北区丸の内2-3-1", type: "activity", cost: 400, jrPass: false, note: "日本名園", image: "https://upload.wikimedia.org/wikipedia/commons/thumb/6/67/Okayama_Castle_01.jpg/800px-Okayama_Castle_01.jpg" },
+                    { id: 703, time: "巴士", name: "岡山站 → 機場", address: "岡山県岡山市北区日応寺1277", type: "transport", cost: 780, jrPass: false, note: "利木津巴士", image: "https://upload.wikimedia.org/wikipedia/commons/thumb/2/2b/Okaden_Bus_985_New_Aero_Star.jpg/640px-Okaden_Bus_985_New_Aero_Star.jpg" }
+                ]
+            }
+        ];
+
+        // 圖示組件
+        const Icon = ({ type }) => {
+            const icons = { transport: "🚄", food: "🍜", activity: "⛩️", stay: "🛏️", relax: "♨️" };
+            const colors = {
+                transport: "bg-gray-100 text-gray-600",
+                food: "bg-orange-100 text-orange-500",
+                activity: "bg-momo-pink text-momo-red",
+                stay: "bg-indigo-100 text-indigo-500",
+                relax: "bg-teal-100 text-teal-600"
+            };
+            return (
+                <div className={`w-10 h-10 rounded-full flex items-center justify-center text-xl shrink-0 ${colors[type] || colors.activity} shadow-sm border border-white/50 bg-white`}>
+                    {icons[type] || icons.activity}
+                </div>
+            );
+        };
+
+        // 行程卡片
+        const LocationCard = ({ 
+            item, index, onUpdate, onDelete, onDuplicate, isLast,
+            onDragStart, onDragEnter, onDragEnd 
+        }) => {
+            const [isEditing, setIsEditing] = useState(false);
+            const [editData, setEditData] = useState({ ...item });
+
+            const displayImage = item.image || getAutoImageUrl(item.name);
+
+            const handleSave = () => {
+                const finalData = { ...editData, cost: parseInt(editData.cost) || 0 };
+                if (!finalData.image) finalData.image = ""; 
+                onUpdate(index, finalData);
+                setIsEditing(false);
+            };
+
+            const handleChange = (e) => {
+                const { name, value, type, checked } = e.target;
+                setEditData(prev => ({ 
+                    ...prev, 
+                    [name]: type === 'checkbox' ? checked : value 
+                }));
+            };
+
+            const openGoogleImageSearch = () => {
+                const query = encodeURIComponent(editData.name + " 圖片");
+                window.open(`https://www.google.com/search?tbm=isch&q=${query}`, '_blank');
+            };
+
+            if (isEditing) {
+                return (
+                    <div className="relative pl-14 mb-4 fade-in z-20">
+                        <div className="absolute left-0 top-0 w-10 flex justify-center">
+                             <div className="z-10 bg-fcfaf8 p-1"><Icon type={editData.type} /></div>
+                        </div>
+                        <div className="glass-card p-4 rounded-xl border-l-4 border-l-stone-400 bg-white shadow-xl">
+                            <div className="grid grid-cols-2 gap-2 mb-3">
+                                <input name="time" value={editData.time} onChange={handleChange} placeholder="時間" className="edit-input text-xs font-bold" />
+                                <select name="type" value={editData.type} onChange={handleChange} className="edit-input text-xs">
+                                    <option value="transport">🚄 交通</option>
+                                    <option value="food">🍜 美食</option>
+                                    <option value="activity">⛩️ 景點</option>
+                                    <option value="stay">🛏️ 住宿</option>
+                                    <option value="relax">♨️ 放鬆</option>
+                                </select>
+                            </div>
+                            <input name="name" value={editData.name} onChange={handleChange} placeholder="地點名稱" className="edit-input font-bold text-lg mb-2" autoFocus />
+                            
+                            {/* 地址編輯欄位 */}
+                            <div className="mb-2">
+                                <label className="text-[10px] text-gray-400 block mb-1">📍 詳細地址</label>
+                                <input name="address" value={editData.address || ''} onChange={handleChange} placeholder="輸入地址..." className="edit-input text-xs text-stone-600" />
+                            </div>
+
+                            <div className="mb-2">
+                                <div className="flex justify-between items-center mb-1">
+                                    <label className="text-[10px] text-gray-400">圖片網址 (可留空)</label>
+                                    <button onClick={openGoogleImageSearch} className="text-[10px] text-blue-500 hover:underline flex items-center gap-1">
+                                        🔍 搜尋圖片
+                                    </button>
+                                </div>
+                                <input name="image" value={editData.image || ''} onChange={handleChange} placeholder="https://..." className="edit-input text-xs text-gray-600" />
+                            </div>
+
+                            <div className="grid grid-cols-2 gap-2 mb-2 bg-gray-50 p-2 rounded-lg">
+                                <div className="relative">
+                                    <span className="absolute left-2 top-1.5 text-gray-400 text-xs">¥</span>
+                                    <input name="cost" type="number" value={editData.cost} onChange={handleChange} placeholder="0" className="edit-input pl-5 text-sm font-mono" />
+                                </div>
+                                <div className="flex items-center">
+                                    <label className="flex items-center space-x-2 text-sm text-gray-600 cursor-pointer select-none">
+                                        <input type="checkbox" name="jrPass" checked={editData.jrPass} onChange={handleChange} className="w-4 h-4 text-green-600 rounded focus:ring-green-500 border-gray-300" />
+                                        <span>JR Pass 適用</span>
+                                    </label>
+                                </div>
+                            </div>
+                            
+                            <input name="note" value={editData.note} onChange={handleChange} placeholder="備註" className="edit-input text-sm mt-1" />
+                            
+                            <div className="flex justify-end gap-2 mt-3 pt-2 border-t border-gray-100">
+                                <button onClick={() => setIsEditing(false)} className="px-3 py-1 text-xs text-gray-500 hover:bg-gray-100 rounded">取消</button>
+                                <button onClick={handleSave} className="px-4 py-1 bg-stone-800 text-white text-xs rounded hover:bg-black">儲存</button>
+                            </div>
+                        </div>
+                    </div>
+                );
+            }
+
+            return (
+                <div 
+                    draggable
+                    onDragStart={(e) => onDragStart(e, index)}
+                    onDragEnter={(e) => onDragEnter(e, index)}
+                    onDragEnd={onDragEnd}
+                    onDragOver={(e) => e.preventDefault()}
+                    className="relative pl-14 group cursor-move transition-transform duration-200"
+                    style={{ animationDelay: `${index * 50}ms` }}
+                >
+                    {!isLast && <div className="absolute left-5 top-10 bottom-0 w-0.5 bg-stone-200 pointer-events-none"></div>}
+                    <div className="absolute left-0 top-0 w-10 flex justify-center pointer-events-none h-full">
+                        <div className="z-10 bg-fcfaf8 p-1 sticky top-20"><Icon type={item.type} /></div>
+                    </div>
+
+                    <div className={`glass-card rounded-2xl relative transition-all hover:translate-x-1 active:scale-[0.98]
+                        ${item.type === 'transport' ? 'border-l-4 border-l-stone-400 bg-stone-50/60' : 'border-l-4 border-l-momo-pink'}`}>
+                        
+                        {/* 圖片區域 */}
+                        <div className="card-image-container group-hover:h-[160px] transition-all duration-500">
+                            <img src={displayImage} alt={item.name} className="card-image" loading="lazy" onError={(e) => e.target.src='https://loremflickr.com/400/200/japan,travel,scenery/all'} />
+                            <div className="absolute inset-0 bg-gradient-to-t from-white via-white/10 to-transparent opacity-90"></div>
+                        </div>
+
+                        {/* 內容區域 */}
+                        <div className="p-4 pt-2 relative -mt-8">
+                            {/* 動作按鈕 */}
+                            <div className="absolute top-0 right-2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity bg-white/90 rounded-full p-1 shadow-sm backdrop-blur-sm z-10">
+                                <div className="w-8 h-8 flex items-center justify-center text-stone-300 cursor-move" title="拖曳排序"><svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 8h16M4 16h16"></path></svg></div>
+                                <a href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(item.address || item.name)}`} target="_blank" rel="noopener noreferrer" className="w-8 h-8 rounded-full hover:bg-blue-50 text-stone-400 hover:text-blue-600 flex items-center justify-center" title="導航"><svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/></svg></a>
+                                <button onClick={() => onDuplicate(index)} className="w-8 h-8 rounded-full hover:bg-green-50 text-stone-400 hover:text-green-600 flex items-center justify-center" title="複製"><svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg></button>
+                                <button onClick={() => setIsEditing(true)} className="w-8 h-8 rounded-full hover:bg-amber-50 text-stone-400 hover:text-amber-600 flex items-center justify-center" title="編輯"><svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path></svg></button>
+                                <button onClick={() => onDelete(index)} className="w-8 h-8 rounded-full hover:bg-red-50 text-stone-400 hover:text-red-600 flex items-center justify-center" title="刪除"><svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg></button>
+                            </div>
+
+                            <div className="flex justify-between items-start mb-1 pr-2 relative z-0">
+                                <span className={`text-xs font-bold px-2 py-0.5 rounded ${item.type === 'transport' ? 'bg-stone-200 text-stone-600' : 'bg-rose-100 text-rose-600'}`}>
+                                    {item.time}
+                                </span>
+                                <div className="flex flex-col items-end">
+                                    {item.jrPass && (
+                                        <span className="jr-badge mb-0.5">
+                                            <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path></svg>
+                                            JR PASS
+                                        </span>
+                                    )}
+                                    {item.cost > 0 && (
+                                        <span className={`text-xs font-mono font-bold ${item.jrPass ? 'text-gray-400 line-through' : 'text-stone-600'}`}>
+                                            ¥{item.cost.toLocaleString()}
+                                        </span>
+                                    )}
+                                </div>
+                            </div>
+                            
+                            <h3 className="text-lg font-bold text-stone-800 leading-tight mb-1 pr-12 select-none relative z-0">
+                                {item.name}
+                            </h3>
+                            
+                            {item.address && (
+                                <p className="text-xs text-stone-400 mb-1 flex items-center gap-1">
+                                    📍 {item.address}
+                                </p>
+                            )}
+                            
+                            {item.note && (
+                                <p className="text-sm text-stone-500 flex items-center gap-1 select-none relative z-0">
+                                    {item.type === 'transport' ? '🎫' : '💡'} {item.note}
+                                </p>
+                            )}
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+
+        const App = () => {
+            const [activeDay, setActiveDay] = useState(1);
+            const [itinerary, setItinerary] = useState(defaultItineraryData);
+            const [loaded, setLoaded] = useState(false);
+            const [isPanelExpanded, setIsPanelExpanded] = useState(true);
+            
+            const dragItem = useRef();
+            const dragOverItem = useRef();
+            const fileInputRef = useRef(null);
+
+            useEffect(() => {
+                const saved = localStorage.getItem('myOkamotoTrip_Img');
+                if (saved) {
+                    try { 
+                        const parsed = JSON.parse(saved);
+                        // 檢查舊資料格式，若無圖片或地址欄位則自動補上
+                        const migrated = parsed.map((day, dIdx) => ({
+                            ...day,
+                            locations: day.locations.map((loc, lIdx) => ({
+                                ...loc,
+                                image: loc.image || defaultItineraryData[dIdx]?.locations[lIdx]?.image || getAutoImageUrl(loc.name),
+                                address: loc.address || defaultItineraryData[dIdx]?.locations[lIdx]?.address || ""
+                            }))
+                        }));
+                        setItinerary(migrated); 
+                    } catch(e) {}
+                } else {
+                    setItinerary(defaultItineraryData);
+                }
+                setLoaded(true);
+            }, []);
+
+            useEffect(() => {
+                if(loaded) localStorage.setItem('myOkamotoTrip_Img', JSON.stringify(itinerary));
+            }, [itinerary, loaded]);
+
+            const currentDayIndex = itinerary.findIndex(d => d.day === activeDay);
+            const currentDayData = itinerary[currentDayIndex];
+
+            // 統計
+            const stats = useMemo(() => {
+                let totalCash = 0;
+                let totalSaved = 0;
+                let dailyCash = 0;
+
+                itinerary.forEach(day => {
+                    day.locations.forEach(item => {
+                        if (item.type === 'transport') {
+                            const cost = parseInt(item.cost) || 0;
+                            if (item.jrPass) {
+                                totalSaved += cost;
+                            } else {
+                                totalCash += cost;
+                                if (day.day === activeDay) {
+                                    dailyCash += cost;
+                                }
+                            }
+                        }
+                    });
+                });
+
+                return { totalCash, totalSaved, dailyCash };
+            }, [itinerary, activeDay]);
+
+            // CRUD Handlers
+            const updateLocations = (newLocations) => {
+                const newItinerary = [...itinerary];
+                newItinerary[currentDayIndex] = { ...currentDayData, locations: newLocations };
+                setItinerary(newItinerary);
+            };
+            const handleUpdateItem = (idx, item) => {
+                const newLocs = [...currentDayData.locations];
+                newLocs[idx] = item;
+                updateLocations(newLocs);
+            };
+            const handleDeleteItem = (idx) => {
+                const newLocs = currentDayData.locations.filter((_, i) => i !== idx);
+                updateLocations(newLocs);
+            };
+            const handleDuplicateItem = (idx) => {
+                const item = { ...currentDayData.locations[idx], id: Date.now() };
+                const newLocs = [...currentDayData.locations];
+                newLocs.splice(idx + 1, 0, item);
+                updateLocations(newLocs);
+            };
+            const handleAddItem = () => {
+                const newName = "新行程";
+                updateLocations([...currentDayData.locations, { 
+                    id: Date.now(), time: "時間", name: newName, address: "", type: "activity", cost: 0, jrPass: false, note: "", 
+                    image: getAutoImageUrl(newName)
+                }]);
+            };
+
+            // 檔案匯出 (下載/儲存)
+            const handleExport = async () => {
+                const dataStr = JSON.stringify(itinerary, null, 2);
+                
+                if ('showSaveFilePicker' in window) {
+                    try {
+                        const handle = await window.showSaveFilePicker({
+                            suggestedName: `okayama_trip_${new Date().toISOString().slice(0,10)}.json`,
+                            types: [{
+                                description: 'JSON Files',
+                                accept: { 'application/json': ['.json'] },
+                            }],
+                        });
+                        const writable = await handle.createWritable();
+                        await writable.write(dataStr);
+                        await writable.close();
+                        alert("檔案儲存成功！");
+                        return;
+                    } catch (err) {
+                        if (err.name !== 'AbortError') console.error('SaveFilePicker failed:', err);
+                        else return;
+                    }
+                }
+
+                const blob = new Blob([dataStr], { type: "application/json" });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `okayama_trip_${new Date().toISOString().slice(0,10)}.json`;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+            };
+
+            // 檔案匯入 (讀取)
+            const handleImportClick = () => {
+                fileInputRef.current.click();
+            };
+
+            const handleFileChange = (e) => {
+                const file = e.target.files[0];
+                if (!file) return;
+                const reader = new FileReader();
+                reader.onload = (event) => {
+                    try {
+                        const parsed = JSON.parse(event.target.result);
+                        if (Array.isArray(parsed) && parsed.length > 0 && parsed[0].locations) {
+                            if(confirm("確定要讀取此檔案嗎？目前的行程將被覆蓋。")) {
+                                setItinerary(parsed);
+                                alert("行程讀取成功！");
+                            }
+                        } else {
+                            alert("檔案格式不正確，請確認這是本系統匯出的 JSON 檔。");
+                        }
+                    } catch (err) {
+                        alert("無法讀取檔案，請確認檔案格式。");
+                    }
+                    e.target.value = null; // Reset input
+                };
+                reader.readAsText(file);
+            };
+
+            // Drag & Drop
+            const handleDragStart = (e, position) => {
+                dragItem.current = position;
+                e.target.classList.add('dragging');
+            };
+            const handleDragEnter = (e, position) => {
+                dragOverItem.current = position;
+                if (dragItem.current !== null && dragItem.current !== position) {
+                    const copyListItems = [...currentDayData.locations];
+                    const dragItemContent = copyListItems[dragItem.current];
+                    copyListItems.splice(dragItem.current, 1);
+                    copyListItems.splice(position, 0, dragItemContent);
+                    dragItem.current = position;
+                    updateLocations(copyListItems);
+                }
+            };
+            const handleDragEnd = (e) => {
+                dragItem.current = null;
+                dragOverItem.current = null;
+                e.target.classList.remove('dragging');
+            };
+
+            if (!loaded) return null;
+
+            return (
+                <div className="min-h-screen pb-40 relative">
+                    <header className="bg-stone-900 text-white py-8 px-6 text-center relative overflow-hidden flex flex-col items-center">
+                        <div className="absolute inset-0 opacity-10" style={{backgroundImage: "radial-gradient(#ffffff 1px, transparent 1px)", backgroundSize: "20px 20px"}}></div>
+                        <div className="relative z-10 w-full max-w-4xl flex justify-between items-start mb-4">
+                             {/* 標題區 */}
+                            <div className="text-left">
+                                <h1 className="text-2xl md:text-3xl font-serif font-bold text-momo-pink mb-1">岡山桃太郎之旅</h1>
+                                <p className="text-stone-400 text-xs tracking-widest">SAVE & EXPORT EDITION</p>
+                            </div>
+
+                            {/* 功能按鈕區 */}
+                            <div className="flex gap-2">
+                                <button onClick={handleExport} className="flex items-center gap-1 bg-stone-700 hover:bg-stone-600 px-3 py-1.5 rounded-lg text-xs transition-colors" title="匯出行程 (下載)">
+                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
+                                    <span className="hidden md:inline">匯出</span>
+                                </button>
+                                <button onClick={handleImportClick} className="flex items-center gap-1 bg-stone-700 hover:bg-stone-600 px-3 py-1.5 rounded-lg text-xs transition-colors" title="匯入行程 (讀取)">
+                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path></svg>
+                                    <span className="hidden md:inline">匯入</span>
+                                </button>
+                                <input type="file" ref={fileInputRef} onChange={handleFileChange} accept=".json" className="hidden" />
+                                
+                                <button onClick={() => {if(window.confirm("重置將清除所有修改？")) { localStorage.removeItem('myOkamotoTrip_Img'); window.location.reload(); }}} 
+                                    className="flex items-center gap-1 bg-stone-800 hover:bg-red-900/50 text-stone-400 hover:text-red-300 px-3 py-1.5 rounded-lg text-xs transition-colors" title="重置">
+                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
+                                </button>
+                            </div>
+                        </div>
+                    </header>
+
+                    <div className="max-w-3xl mx-auto px-4 mt-6">
+                        <div className="flex gap-2 overflow-x-auto pb-4 scrollbar-hide sticky top-2 z-30 py-2 bg-gradient-to-b from-[#fcfaf8] to-transparent">
+                            {itinerary.map((data) => (
+                                <button key={data.day} onClick={() => setActiveDay(data.day)}
+                                    className={`px-4 py-2 rounded-full text-sm font-bold whitespace-nowrap transition-all shadow-sm
+                                        ${activeDay === data.day ? 'bg-stone-800 text-white transform scale-105' : 'bg-white text-stone-400 border border-stone-200'}`}>
+                                    Day {data.day}
+                                </button>
+                            ))}
+                        </div>
+
+                        <div key={activeDay} className="fade-in mt-2 pb-12">
+                            <div className="mb-6 px-2">
+                                <h2 className="text-2xl font-serif font-bold text-stone-800 flex items-center gap-2">
+                                    <span className="text-momo-red">Day {currentDayData.day}</span>
+                                    {currentDayData.title}
+                                </h2>
+                                <p className="text-stone-500 text-sm mt-1 ml-1">{currentDayData.subtitle}</p>
+                            </div>
+
+                            <div className="space-y-6 relative pl-2">
+                                <div className="absolute left-7 top-4 bottom-4 w-0.5 bg-stone-200"></div>
+                                {currentDayData.locations.map((item, index) => (
+                                    <LocationCard 
+                                        key={item.id} item={item} index={index}
+                                        isLast={index === currentDayData.locations.length - 1}
+                                        onUpdate={handleUpdateItem} onDelete={handleDeleteItem} 
+                                        onDuplicate={handleDuplicateItem}
+                                        onDragStart={handleDragStart} onDragEnter={handleDragEnter} onDragEnd={handleDragEnd}
+                                    />
+                                ))}
+                                <button onClick={handleAddItem} className="ml-14 w-[calc(100%-3.5rem)] py-3 border-2 border-dashed border-stone-300 rounded-xl text-stone-400 hover:border-momo-pink hover:text-momo-red hover:bg-rose-50 transition-colors font-bold text-sm">
+                                    + 新增行程
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* 懸浮費用統計面板 (可收納) */}
+                    <div className={`fixed bottom-6 right-4 left-4 md:left-auto md:w-80 cost-panel rounded-2xl transition-all duration-300 z-40 overflow-hidden ${isPanelExpanded ? 'p-4' : 'p-3'}`}>
+                        <div 
+                            className="flex justify-between items-center cursor-pointer"
+                            onClick={() => setIsPanelExpanded(!isPanelExpanded)}
+                        >
+                            <div className="flex items-center gap-2">
+                                <span className="text-stone-300 text-xs uppercase tracking-wider font-bold">
+                                    {isPanelExpanded ? "費用統計" : "Total Payment"}
+                                </span>
+                                {!isPanelExpanded && (
+                                    <span className="text-momo-pink font-mono font-bold">
+                                        ¥{stats.totalCash.toLocaleString()}
+                                    </span>
+                                )}
+                            </div>
+                            
+                            <button className="text-stone-400 hover:text-white transition-colors">
+                                <svg 
+                                    className={`w-5 h-5 transform transition-transform ${isPanelExpanded ? 'rotate-180' : ''}`} 
+                                    fill="none" stroke="currentColor" viewBox="0 0 24 24"
+                                >
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
+                                </svg>
+                            </button>
+                        </div>
+
+                        {isPanelExpanded && (
+                            <div className="mt-3 pt-3 border-t border-white/10 flex flex-col gap-2 fade-in">
+                                 <div className="flex justify-between items-center">
+                                    <span className="text-gray-300 text-sm">本日自付交通費</span>
+                                    <span className="text-lg font-mono font-bold text-white">¥{stats.dailyCash.toLocaleString()}</span>
+                                </div>
+                                <div className="grid grid-cols-2 gap-4 pt-1">
+                                    <div>
+                                        <p className="text-[10px] text-gray-400 uppercase tracking-wider">Total Payment</p>
+                                        <p className="text-xl font-mono font-bold text-momo-pink">¥{stats.totalCash.toLocaleString()}</p>
+                                    </div>
+                                    <div className="text-right">
+                                        <p className="text-[10px] text-gray-400 uppercase tracking-wider">JR Pass Saved</p>
+                                        <p className="text-xl font-mono font-bold text-green-400">¥{stats.totalSaved.toLocaleString()}</p>
+                                    </div>
+                                </div>
+                                {stats.totalSaved > 23000 && (
+                                    <div className="text-center text-[10px] text-green-300 bg-green-900/30 rounded py-1 animate-pulse mt-1">
+                                        ✨ 恭喜！JR Pass 已回本 (票價 ¥23,000)
+                                    </div>
+                                )}
+                            </div>
+                        )}
+                    </div>
+                </div>
+            );
+        };
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+</html>
