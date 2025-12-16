@@ -1,0 +1,708 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>岡山桃太郎之旅 | 簡潔行程版</title>
+    <!-- 引入 React 和 Tailwind -->
+    <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- 引入字體與自定義樣式 -->
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700&family=Shippori+Mincho:wght@400;700&display=swap');
+        
+        body {
+            font-family: 'Noto Sans TC', sans-serif;
+            background-color: #fcfaf8;
+            color: #4a4a4a;
+        }
+        
+        .font-serif { font-family: 'Shippori Mincho', serif; }
+        .scrollbar-hide::-webkit-scrollbar { display: none; }
+        .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
+        
+        .fade-in { animation: fadeIn 0.4s ease-out forwards; opacity: 0; transform: translateY(10px); }
+        @keyframes fadeIn { to { opacity: 1; transform: translateY(0); } }
+
+        .glass-card {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(8px);
+            border: 1px solid rgba(255, 255, 255, 0.5);
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+            transition: all 0.2s ease;
+        }
+        
+        .dragging {
+            opacity: 0.5;
+            transform: scale(0.98);
+            box-shadow: 0 10px 20px rgba(0,0,0,0.1);
+            border: 2px dashed #fecaca;
+        }
+
+        .edit-input {
+            background: rgba(255,255,255,0.8);
+            border: 1px solid #e5e7eb;
+            border-radius: 6px;
+            padding: 4px 8px;
+            width: 100%;
+            transition: all 0.2s;
+        }
+        .edit-input:focus {
+            outline: none;
+            border-color: #fecaca;
+            box-shadow: 0 0 0 2px rgba(254, 202, 202, 0.3);
+        }
+        
+        .jr-badge {
+            background: #15803d;
+            color: white;
+            font-size: 0.65rem;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-weight: bold;
+            letter-spacing: 0.05em;
+            display: inline-flex;
+            align-items: center;
+            gap: 2px;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+        }
+
+        .cost-panel {
+            background: rgba(30, 41, 59, 0.95);
+            backdrop-filter: blur(10px);
+            color: white;
+            box-shadow: 0 -4px 20px rgba(0,0,0,0.2);
+            border: 1px solid rgba(255,255,255,0.1);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+    </style>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        'momo-pink': '#fecaca',
+                        'momo-red': '#f43f5e',
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body>
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect, useRef, useMemo } = React;
+
+        // 預設資料 (移除圖片欄位)
+        const defaultItineraryData = [
+            {
+                day: 1,
+                title: "抵達岡山",
+                subtitle: "2025/12/26 (五)",
+                locations: [
+                    { id: 101, time: "14:35", name: "岡山機場", address: "岡山県岡山市北区日応寺1277", type: "transport", cost: 780, jrPass: false, note: "利木津巴士" },
+                    { id: 102, time: "16:05", name: "岡山車站", address: "岡山県岡山市北区駅元町1-1", type: "transport", cost: 0, jrPass: false, note: "停留 00時15分" },
+                    { id: 103, time: "16:30", name: "Regalo Hotel Okayama", address: "岡山県岡山市北区本町8-3", type: "stay", cost: 0, jrPass: false, note: "Check-in / 停留 00時30分" },
+                    { id: 104, time: "17:15", name: "400℃ PIZZA モリノマチ (2号店)", address: "岡山県岡山市北区杜の街グレース", type: "food", cost: 0, jrPass: false, note: "停留 01時00分" },
+                    { id: 105, time: "18:15", name: "Myojinmaru Okayama Honmachi", address: "岡山県岡山市北区本町", type: "food", cost: 0, jrPass: false, note: "停留 01時00分 / 土佐料理" },
+                    { id: 106, time: "19:21", name: "岡山站前商店街", address: "岡山県岡山市北区駅前町", type: "activity", cost: 0, jrPass: false, note: "停留 01時00分" },
+                    { id: 107, time: "20:27", name: "Don Quijote Okayama-ekimae", address: "岡山県岡山市北区本町6-30", type: "activity", cost: 0, jrPass: false, note: "停留 01時00分 / 驚安殿堂" },
+                    { id: 108, time: "21:30", name: "Yakiniku Griglia", address: "岡山県岡山市北区", type: "food", cost: 0, jrPass: false, note: "停留 01時00分 / 燒肉" }
+                ]
+            },
+            {
+                day: 2,
+                title: "倉敷美觀與吉備津",
+                subtitle: "2025/12/27 (六)",
+                locations: [
+                    { id: 201, time: "08:00", name: "岡山駅", address: "岡山県岡山市北区駅元町1-1", type: "transport", cost: 0, jrPass: true, note: "停留 00時10分" },
+                    { id: 202, time: "08:35", name: "倉敷站", address: "岡山県倉敷市阿知1丁目1-1", type: "transport", cost: 330, jrPass: true, note: "停留 00時05分" },
+                    { id: 203, time: "08:48", name: "Kappa 炸豬排飯", address: "岡山県倉敷市阿知2-17-2", type: "food", cost: 0, jrPass: false, note: "停留 01時00分" },
+                    { id: 204, time: "09:50", name: "梅之木味噌豬排", address: "岡山県倉敷市阿知", type: "food", cost: 0, jrPass: false, note: "停留 01時00分" },
+                    { id: 205, time: "10:57", name: "倉敷美觀地區", address: "岡山県倉敷市中央1-4-8", type: "activity", cost: 0, jrPass: false, note: "停留 01時00分" },
+                    { id: 206, time: "12:01", name: "Kurashiki Sandwich Kitchen", address: "岡山県倉敷市", type: "food", cost: 0, jrPass: false, note: "停留 01時00分" },
+                    { id: 207, time: "13:01", name: "倉敷惠比壽商店街", address: "岡山県倉敷市阿知", type: "activity", cost: 0, jrPass: false, note: "停留 01時00分" },
+                    { id: 208, time: "14:11", name: "倉敷桃子 總本店", address: "岡山県倉敷市中央1-1-4", type: "food", cost: 0, jrPass: false, note: "停留 00時30分 / 聖代" },
+                    { id: 209, time: "14:45", name: "桃太郎機關博物館", address: "岡山県倉敷市本町5-11", type: "activity", cost: 600, jrPass: false, note: "停留 00時30分" },
+                    { id: 210, time: "15:25", name: "阿智神社", address: "岡山県倉敷市本町12-1", type: "activity", cost: 0, jrPass: false, note: "停留 00時30分" },
+                    { id: 211, time: "16:04", name: "倉敷布丁", address: "岡山県倉敷市本町", type: "food", cost: 0, jrPass: false, note: "停留 00時05分" },
+                    { id: 212, time: "16:09", name: "岡山車站", address: "岡山県岡山市北区駅元町1-1", type: "transport", cost: 330, jrPass: true, note: "停留 00時10分" },
+                    { id: 213, time: "16:40", name: "備前一宮", address: "岡山県岡山市北区一宮", type: "transport", cost: 210, jrPass: true, note: "停留 00時05分" },
+                    { id: 214, time: "17:12", name: "吉備津神社", address: "岡山県岡山市北区吉備津931", type: "activity", cost: 0, jrPass: false, note: "停留 01時00分" },
+                    { id: 215, time: "18:30", name: "隠岐島拉麺", address: "岡山県岡山市北区本町", type: "food", cost: 0, jrPass: false, note: "停留 01時00分" },
+                    { id: 216, time: "19:37", name: "Tan-ya Bizen (Aeon Mall)", address: "岡山県岡山市北区下石井1-2-1", type: "food", cost: 0, jrPass: false, note: "停留 01時00分" },
+                    { id: 217, time: "20:46", name: "Regalo Hotel Okayama", address: "岡山県岡山市北区本町8-3", type: "stay", cost: 0, jrPass: false, note: "停留 01時00分" },
+                    { id: 218, time: "21:46", name: "Shabu-shabu Sukiyaki Hitorinabe Megu", address: "岡山県岡山市北区", type: "food", cost: 0, jrPass: false, note: "停留 01時00分" }
+                ]
+            },
+            {
+                day: 3,
+                title: "直島藝術巡禮",
+                subtitle: "2025/12/28 (日)",
+                locations: [
+                    { id: 301, time: "08:00", name: "岡山車站", address: "岡山県岡山市北区駅元町1-1", type: "transport", cost: 0, jrPass: true, note: "停留 00時10分" },
+                    { id: 302, time: "09:04", name: "宇野車站", address: "岡山県玉野市築港1-1", type: "transport", cost: 590, jrPass: true, note: "停留 00時10分" },
+                    { id: 303, time: "09:20", name: "往直島渡輪乘船處", address: "岡山県玉野市築港", type: "transport", cost: 300, jrPass: false, note: "停留 00時15分" },
+                    { id: 304, time: "10:05", name: "Ougiya Rent-a-Cycle", address: "香川県香川郡直島町宮ノ浦", type: "activity", cost: 0, jrPass: false, note: "停留 00時20分 / 租車" },
+                    { id: 305, time: "10:47", name: "草間彌生「赤南瓜」", address: "香川県香川郡直島町宮ノ浦港", type: "activity", cost: 0, jrPass: false, note: "停留 00時30分" },
+                    { id: 306, time: "11:17", name: "Cafe Salon 中奥", address: "香川県香川郡直島町本村", type: "food", cost: 0, jrPass: false, note: "停留 01時00分" },
+                    { id: 307, time: "12:23", name: "maimai（元祖 直島バーガー）", address: "香川県香川郡直島町本村", type: "food", cost: 0, jrPass: false, note: "停留 01時00分" },
+                    { id: 308, time: "13:44", name: "naoshima gelato (直島ジェラート)", address: "香川県香川郡直島町", type: "food", cost: 0, jrPass: false, note: "停留 00時10分" },
+                    { id: 309, time: "13:54", name: "直島ヌードル", address: "香川県香川郡直島町", type: "food", cost: 0, jrPass: false, note: "停留 01時00分" },
+                    { id: 310, time: "15:01", name: "Naoshima Yokocho", address: "香川県香川郡直島町", type: "food", cost: 0, jrPass: false, note: "停留 01時00分" },
+                    { id: 311, time: "16:07", name: "Kinosaki Udon Naoshima", address: "香川県香川郡直島町", type: "food", cost: 0, jrPass: false, note: "停留 01時00分" },
+                    { id: 312, time: "17:07", name: "宇野港", address: "岡山県玉野市築港", type: "transport", cost: 300, jrPass: false, note: "停留 00時10分 / 回程渡輪" },
+                    { id: 313, time: "17:38", name: "宇野車站", address: "岡山県玉野市築港1-1", type: "transport", cost: 0, jrPass: true, note: "停留 00時10分" },
+                    { id: 314, time: "17:54", name: "Setouchi Onsen Tamanoyu", address: "岡山県玉野市築港1-1-11", type: "relax", cost: 0, jrPass: false, note: "停留 01時00分 / 溫泉" },
+                    { id: 315, time: "19:00", name: "宇野車站", address: "岡山県玉野市築港1-1", type: "transport", cost: 590, jrPass: true, note: "停留 01時00分" },
+                    { id: 316, time: "20:54", name: "岡山車站", address: "岡山県岡山市北区駅元町1-1", type: "transport", cost: 0, jrPass: true, note: "停留 00時10分" },
+                    { id: 317, time: "21:14", name: "Regalo Hotel Okayama", address: "岡山県岡山市北区本町8-3", type: "stay", cost: 0, jrPass: false, note: "停留 01時00分" }
+                ]
+            },
+            {
+                day: 4,
+                title: "兔島與廣島",
+                subtitle: "2025/12/29 (一)",
+                locations: [
+                    { id: 401, time: "08:00", name: "岡山車站", address: "岡山県岡山市北区駅元町1-1", type: "transport", cost: 0, jrPass: true, note: "停留 00時10分" },
+                    { id: 402, time: "08:56", name: "廣島", address: "広島県広島市南区松原町2-37", type: "transport", cost: 6230, jrPass: true, note: "停留 00時10分 / 新幹線" },
+                    { id: 403, time: "10:02", name: "忠海站", address: "広島県竹原市忠海中町1-1", type: "transport", cost: 1490, jrPass: true, note: "停留 00時10分" },
+                    { id: 404, time: "10:18", name: "忠海港 渡輪乘船處", address: "広島県竹原市忠海", type: "transport", cost: 370, jrPass: false, note: "停留 00時10分" },
+                    { id: 405, time: "11:00", name: "兔耳集音器", address: "大久野島", type: "activity", cost: 0, jrPass: false, note: "停留 00時40分" },
+                    { id: 406, time: "11:46", name: "兔人咖啡", address: "大久野島休暇村", type: "food", cost: 0, jrPass: false, note: "停留 01時00分" },
+                    { id: 407, time: "13:21", name: "忠海港 渡輪乘船處", address: "広島県竹原市忠海", type: "transport", cost: 370, jrPass: false, note: "停留 00時10分" },
+                    { id: 408, time: "14:26", name: "廣島", address: "広島県広島市南区松原町", type: "transport", cost: 1490, jrPass: true, note: "停留 00時10分" },
+                    { id: 409, time: "14:49", name: "廣島城", address: "広島県広島市中区基町21-1", type: "activity", cost: 370, jrPass: false, note: "停留 01時00分" },
+                    { id: 410, time: "16:01", name: "原子彈爆炸圓頂屋", address: "広島県広島市中区大手町1-10", type: "activity", cost: 0, jrPass: false, note: "停留 01時00分" },
+                    { id: 411, time: "17:08", name: "本通商店街", address: "広島県広島市中区本通", type: "activity", cost: 0, jrPass: false, note: "停留 01時00分" },
+                    { id: 412, time: "18:42", name: "ORIGAMINN", address: "広島県広島市", type: "stay", cost: 0, jrPass: false, note: "Check-in / 停留 01時00分" },
+                    { id: 413, time: "20:10", name: "Nagataya (お好み焼 長田屋)", address: "広島県広島市中区大手町1-7-19", type: "food", cost: 0, jrPass: false, note: "停留 01時00分 / 廣島燒" },
+                    { id: 414, time: "21:22", name: "廣島PARCO 本館", address: "広島県広島市中区本通10-1", type: "activity", cost: 0, jrPass: false, note: "停留 01時00分" },
+                    { id: 415, time: "22:24", name: "Okonomimura", address: "広島県広島市中区新天地5-13", type: "food", cost: 0, jrPass: false, note: "停留 01時00分" },
+                    { id: 416, time: "23:27", name: "驚安殿堂 唐吉軻德", address: "広島県広島市中区新天地5-3", type: "activity", cost: 0, jrPass: false, note: "停留 01時00分" },
+                    { id: 417, time: "00:58", name: "ORIGAMINN", address: "広島県広島市", type: "stay", cost: 0, jrPass: false, note: "停留 01時00分" }
+                ]
+            },
+            {
+                day: 5,
+                title: "尾道與鞆之浦",
+                subtitle: "2025/12/30 (二)",
+                locations: [
+                    { id: 501, time: "08:00", name: "廣島", address: "広島県広島市南区松原町", type: "transport", cost: 0, jrPass: true, note: "停留 00時10分" },
+                    { id: 502, time: "09:02", name: "尾道", address: "広島県尾道市東御所町1-1", type: "transport", cost: 1500, jrPass: true, note: "停留 00時10分" },
+                    { id: 503, time: "09:39", name: "千光寺山纜車 山麓站", address: "広島県尾道市東土堂町20-1", type: "transport", cost: 500, jrPass: false, note: "停留 00時10分" },
+                    { id: 504, time: "10:07", name: "千光寺公園頂上展望台", address: "広島県尾道市東土堂町15-1", type: "activity", cost: 0, jrPass: false, note: "停留 00時20分" },
+                    { id: 505, time: "10:32", name: "鼓岩", address: "広島県尾道市東土堂町", type: "activity", cost: 0, jrPass: false, note: "停留 00時20分" },
+                    { id: 506, time: "11:12", name: "尾道拉麵 壹番館本店", address: "広島県尾道市土堂2-9-26", type: "food", cost: 0, jrPass: false, note: "停留 01時00分" },
+                    { id: 507, time: "12:15", name: "（有）金萬堂本舗 本店", address: "広島県尾道市土堂", type: "food", cost: 0, jrPass: false, note: "停留 01時00分" },
+                    { id: 508, time: "13:24", name: "Nekonotepan factory", address: "広島県尾道市東土堂町", type: "food", cost: 0, jrPass: false, note: "停留 00時10分" },
+                    { id: 509, time: "13:44", name: "小野貓點心鋪", address: "広島県尾道市東土堂町", type: "food", cost: 0, jrPass: false, note: "停留 00時10分" },
+                    { id: 510, time: "13:55", name: "Onomichi Sakurachaya Ekimae", address: "広島県尾道市", type: "food", cost: 0, jrPass: false, note: "停留 01時00分" },
+                    { id: 511, time: "14:57", name: "尾道本通商店街", address: "広島県尾道市土堂", type: "activity", cost: 0, jrPass: false, note: "停留 01時00分" },
+                    { id: 512, time: "16:12", name: "尾道", address: "広島県尾道市", type: "transport", cost: 0, jrPass: true, note: "停留 00時05分" },
+                    { id: 513, time: "16:21", name: "尾道拉麵 ベッチャー", address: "広島県尾道市", type: "food", cost: 0, jrPass: false, note: "停留 01時00分" },
+                    { id: 514, time: "17:27", name: "Karasawa Ice Cream", address: "広島県尾道市土堂1-15-19", type: "food", cost: 0, jrPass: false, note: "停留 01時00分" },
+                    { id: 515, time: "19:12", name: "福山車站", address: "広島県福山市三之丸町30-1", type: "transport", cost: 420, jrPass: true, note: "停留 00時05分" },
+                    { id: 516, time: "19:52", name: "鞆之浦觀光情報中心", address: "広島県福山市鞆町鞆", type: "activity", cost: 550, jrPass: false, note: "停留 00時10分" },
+                    { id: 517, time: "20:10", name: "汐之音 鞆之浦大福", address: "広島県福山市鞆町", type: "food", cost: 0, jrPass: false, note: "停留 00時10分" },
+                    { id: 518, time: "20:31", name: "Yuki-san-chi", address: "広島県福山市鞆町", type: "food", cost: 0, jrPass: false, note: "停留 01時00分" },
+                    { id: 519, time: "21:41", name: "Cafe Gangi", address: "広島県福山市鞆町", type: "food", cost: 0, jrPass: false, note: "停留 01時00分" },
+                    { id: 520, time: "22:43", name: "Tomonoura a cafe", address: "広島県福山市鞆町", type: "food", cost: 0, jrPass: false, note: "停留 01時00分" },
+                    { id: 521, time: "23:43", name: "ORIGAMINN", address: "広島県広島市", type: "stay", cost: 0, jrPass: false, note: "停留 01時00分" }
+                ]
+            },
+            {
+                day: 6,
+                title: "宮島嚴島神社",
+                subtitle: "2025/12/31 (三)",
+                locations: [
+                    { id: 601, time: "08:00", name: "廣島", address: "広島県広島市南区松原町", type: "transport", cost: 0, jrPass: true, note: "停留 00時10分" },
+                    { id: 602, time: "08:49", name: "宮島口", address: "広島県廿日市市宮島口", type: "transport", cost: 420, jrPass: true, note: "停留 00時10分" },
+                    { id: 603, time: "09:02", name: "JR 西日本宮島渡輪 棧橋事務所", address: "広島県廿日市市宮島口", type: "transport", cost: 180, jrPass: true, note: "停留 00時10分" },
+                    { id: 604, time: "09:55", name: "宮島纜車", address: "広島県廿日市市宮島町", type: "transport", cost: 1100, jrPass: false, note: "停留 01時00分" },
+                    { id: 605, time: "11:30", name: "彌山 展望台", address: "広島県廿日市市宮島町", type: "activity", cost: 0, jrPass: false, note: "停留 01時00分" },
+                    { id: 606, time: "13:12", name: "嚴島神社", address: "広島県廿日市市宮島町1-1", type: "activity", cost: 300, jrPass: false, note: "停留 01時00分" },
+                    { id: 607, time: "14:23", name: "宮島咖喱麵包研究所", address: "広島県廿日市市宮島町", type: "food", cost: 0, jrPass: false, note: "停留 00時10分" },
+                    { id: 608, time: "14:36", name: "宮島表參道商店街", address: "広島県廿日市市宮島町", type: "activity", cost: 0, jrPass: false, note: "停留 01時00分" },
+                    { id: 609, time: "15:38", name: "Miyajima Oyster Fried Skewers", address: "広島県廿日市市宮島町", type: "food", cost: 0, jrPass: false, note: "停留 00時10分" },
+                    { id: 610, time: "15:50", name: "宮島咖啡", address: "広島県廿日市市宮島町", type: "food", cost: 0, jrPass: false, note: "停留 00時20分" },
+                    { id: 611, time: "16:11", name: "炸黑輪 三遊姬", address: "広島県廿日市市宮島町", type: "food", cost: 0, jrPass: false, note: "停留 00時10分" },
+                    { id: 612, time: "16:22", name: "炸紅葉饅頭 紅葉堂本店", address: "広島県廿日市市宮島町", type: "food", cost: 0, jrPass: false, note: "停留 00時10分" },
+                    { id: 613, time: "16:41", name: "山村茶屋", address: "広島県廿日市市宮島町", type: "food", cost: 0, jrPass: false, note: "停留 01時00分" },
+                    { id: 614, time: "19:16", name: "ORIGAMINN", address: "広島県広島市", type: "stay", cost: 0, jrPass: false, note: "停留 01時00分" }
+                ]
+            },
+            {
+                day: 7,
+                title: "岡山城與賦歸",
+                subtitle: "2026/01/01 (四)",
+                locations: [
+                    { id: 701, time: "08:00", name: "ORIGAMINN", address: "広島県広島市", type: "stay", cost: 0, jrPass: false, note: "停留 01時00分" },
+                    { id: 702, time: "10:20", name: "岡山車站", address: "岡山県岡山市北区駅元町1-1", type: "transport", cost: 6230, jrPass: true, note: "停留 01時00分" },
+                    { id: 703, time: "11:29", name: "Yakinikuhidaya Honmachiten", address: "岡山県岡山市北区本町", type: "food", cost: 0, jrPass: false, note: "停留 01時00分 / 燒肉" },
+                    { id: 704, time: "12:34", name: "味司 野村", address: "岡山県岡山市北区平和町1-10", type: "food", cost: 0, jrPass: false, note: "停留 01時00分" },
+                    { id: 705, time: "13:50", name: "岡山後樂園", address: "岡山県岡山市北区後楽園1-5", type: "activity", cost: 400, jrPass: false, note: "停留 01時00分" },
+                    { id: 706, time: "14:57", name: "岡山城", address: "岡山県岡山市北区丸の内2-3-1", type: "activity", cost: 0, jrPass: false, note: "停留 01時00分" },
+                    { id: 707, time: "15:57", name: "岡山機場", address: "岡山県岡山市北区日応寺1277", type: "transport", cost: 780, jrPass: false, note: "停留 01時00分" },
+                    { id: 708, time: "16:57", name: "桃園國際機場第二航廈", address: "台灣桃園市大園區", type: "transport", cost: 0, jrPass: false, note: "停留 01時00分" }
+                ]
+            }
+        ];
+
+        // 圖示組件
+        const Icon = ({ type }) => {
+            const icons = { transport: "🚄", food: "🍜", activity: "⛩️", stay: "🛏️", relax: "♨️" };
+            const colors = {
+                transport: "bg-gray-100 text-gray-600",
+                food: "bg-orange-100 text-orange-500",
+                activity: "bg-momo-pink text-momo-red",
+                stay: "bg-indigo-100 text-indigo-500",
+                relax: "bg-teal-100 text-teal-600"
+            };
+            return (
+                <div className={`w-10 h-10 rounded-full flex items-center justify-center text-xl shrink-0 ${colors[type] || colors.activity} shadow-sm border border-white/50 bg-white`}>
+                    {icons[type] || icons.activity}
+                </div>
+            );
+        };
+
+        // 行程卡片
+        const LocationCard = ({ 
+            item, index, onUpdate, onDelete, onDuplicate, isLast,
+            onDragStart, onDragEnter, onDragEnd 
+        }) => {
+            const [isEditing, setIsEditing] = useState(false);
+            const [editData, setEditData] = useState({ ...item });
+
+            const handleSave = () => {
+                const finalData = { ...editData, cost: parseInt(editData.cost) || 0 };
+                onUpdate(index, finalData);
+                setIsEditing(false);
+            };
+
+            const handleChange = (e) => {
+                const { name, value, type, checked } = e.target;
+                setEditData(prev => ({ 
+                    ...prev, 
+                    [name]: type === 'checkbox' ? checked : value 
+                }));
+            };
+
+            if (isEditing) {
+                return (
+                    <div className="relative pl-14 mb-4 fade-in z-20">
+                        <div className="absolute left-0 top-0 w-10 flex justify-center">
+                             <div className="z-10 bg-fcfaf8 p-1"><Icon type={editData.type} /></div>
+                        </div>
+                        <div className="glass-card p-4 rounded-xl border-l-4 border-l-stone-400 bg-white shadow-xl">
+                            <div className="grid grid-cols-2 gap-2 mb-3">
+                                <input name="time" value={editData.time} onChange={handleChange} placeholder="時間" className="edit-input text-xs font-bold" />
+                                <select name="type" value={editData.type} onChange={handleChange} className="edit-input text-xs">
+                                    <option value="transport">🚄 交通</option>
+                                    <option value="food">🍜 美食</option>
+                                    <option value="activity">⛩️ 景點</option>
+                                    <option value="stay">🛏️ 住宿</option>
+                                    <option value="relax">♨️ 放鬆</option>
+                                </select>
+                            </div>
+                            <input name="name" value={editData.name} onChange={handleChange} placeholder="地點名稱" className="edit-input font-bold text-lg mb-2" autoFocus />
+                            
+                            {/* 地址編輯欄位 */}
+                            <div className="mb-2">
+                                <label className="text-[10px] text-gray-400 block mb-1">📍 詳細地址</label>
+                                <input name="address" value={editData.address || ''} onChange={handleChange} placeholder="輸入地址..." className="edit-input text-xs text-stone-600" />
+                            </div>
+
+                            <div className="grid grid-cols-2 gap-2 mb-2 bg-gray-50 p-2 rounded-lg">
+                                <div className="relative">
+                                    <span className="absolute left-2 top-1.5 text-gray-400 text-xs">¥</span>
+                                    <input name="cost" type="number" value={editData.cost} onChange={handleChange} placeholder="0" className="edit-input pl-5 text-sm font-mono" />
+                                </div>
+                                <div className="flex items-center">
+                                    <label className="flex items-center space-x-2 text-sm text-gray-600 cursor-pointer select-none">
+                                        <input type="checkbox" name="jrPass" checked={editData.jrPass} onChange={handleChange} className="w-4 h-4 text-green-600 rounded focus:ring-green-500 border-gray-300" />
+                                        <span>JR Pass 適用</span>
+                                    </label>
+                                </div>
+                            </div>
+                            
+                            <input name="note" value={editData.note} onChange={handleChange} placeholder="備註" className="edit-input text-sm mt-1" />
+                            
+                            <div className="flex justify-end gap-2 mt-3 pt-2 border-t border-gray-100">
+                                <button onClick={() => setIsEditing(false)} className="px-3 py-1 text-xs text-gray-500 hover:bg-gray-100 rounded">取消</button>
+                                <button onClick={handleSave} className="px-4 py-1 bg-stone-800 text-white text-xs rounded hover:bg-black">儲存</button>
+                            </div>
+                        </div>
+                    </div>
+                );
+            }
+
+            return (
+                <div 
+                    draggable
+                    onDragStart={(e) => onDragStart(e, index)}
+                    onDragEnter={(e) => onDragEnter(e, index)}
+                    onDragEnd={onDragEnd}
+                    onDragOver={(e) => e.preventDefault()}
+                    className="relative pl-14 group cursor-move transition-transform duration-200"
+                    style={{ animationDelay: `${index * 50}ms` }}
+                >
+                    {!isLast && <div className="absolute left-5 top-10 bottom-0 w-0.5 bg-stone-200 pointer-events-none"></div>}
+                    <div className="absolute left-0 top-0 w-10 flex justify-center pointer-events-none h-full">
+                        <div className="z-10 bg-fcfaf8 p-1 sticky top-6"><Icon type={item.type} /></div>
+                    </div>
+
+                    <div className={`glass-card p-5 pr-5 rounded-2xl relative transition-all hover:translate-x-1 active:scale-[0.98]
+                        ${item.type === 'transport' ? 'border-l-4 border-l-stone-400 bg-stone-50/60' : 'border-l-4 border-l-momo-pink'}`}>
+                        
+                        {/* 動作按鈕 */}
+                        <div className="absolute top-2 right-2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity bg-white/90 rounded-full p-1 shadow-sm backdrop-blur-sm z-10">
+                            <div className="w-8 h-8 flex items-center justify-center text-stone-300 cursor-move" title="拖曳排序"><svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 8h16M4 16h16"></path></svg></div>
+                            <a href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(item.address || item.name)}`} target="_blank" rel="noopener noreferrer" className="w-8 h-8 rounded-full hover:bg-blue-50 text-stone-400 hover:text-blue-600 flex items-center justify-center" title="導航"><svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/></svg></a>
+                            <button onClick={() => onDuplicate(index)} className="w-8 h-8 rounded-full hover:bg-green-50 text-stone-400 hover:text-green-600 flex items-center justify-center" title="複製"><svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg></button>
+                            <button onClick={() => setIsEditing(true)} className="w-8 h-8 rounded-full hover:bg-amber-50 text-stone-400 hover:text-amber-600 flex items-center justify-center" title="編輯"><svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path></svg></button>
+                            <button onClick={() => onDelete(index)} className="w-8 h-8 rounded-full hover:bg-red-50 text-stone-400 hover:text-red-600 flex items-center justify-center" title="刪除"><svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg></button>
+                        </div>
+
+                        <div className="flex justify-between items-start mb-1 pr-2 relative z-0">
+                            <span className={`text-xs font-bold px-2 py-0.5 rounded ${item.type === 'transport' ? 'bg-stone-200 text-stone-600' : 'bg-rose-100 text-rose-600'}`}>
+                                {item.time}
+                            </span>
+                            <div className="flex flex-col items-end">
+                                {item.jrPass && (
+                                    <span className="jr-badge mb-0.5">
+                                        <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path></svg>
+                                        JR PASS
+                                    </span>
+                                )}
+                                {item.cost > 0 && (
+                                    <span className={`text-xs font-mono font-bold ${item.jrPass ? 'text-gray-400 line-through' : 'text-stone-600'}`}>
+                                        ¥{item.cost.toLocaleString()}
+                                    </span>
+                                )}
+                            </div>
+                        </div>
+                        
+                        <h3 className="text-lg font-bold text-stone-800 leading-tight mb-1 pr-12 select-none relative z-0">
+                            {item.name}
+                        </h3>
+                        
+                        {item.address && (
+                            <p className="text-xs text-stone-400 mb-1 flex items-center gap-1 select-none">
+                                📍 {item.address}
+                            </p>
+                        )}
+                        
+                        {item.note && (
+                            <p className="text-sm text-stone-500 flex items-center gap-1 select-none relative z-0">
+                                {item.type === 'transport' ? '🎫' : '💡'} {item.note}
+                            </p>
+                        )}
+                    </div>
+                </div>
+            );
+        };
+
+        const App = () => {
+            const [activeDay, setActiveDay] = useState(1);
+            const [itinerary, setItinerary] = useState(defaultItineraryData);
+            const [loaded, setLoaded] = useState(false);
+            const [isPanelExpanded, setIsPanelExpanded] = useState(true);
+            
+            const dragItem = useRef();
+            const dragOverItem = useRef();
+            const fileInputRef = useRef(null);
+
+            useEffect(() => {
+                const saved = localStorage.getItem('myOkamotoTrip_Clean');
+                if (saved) {
+                    try { 
+                        const parsed = JSON.parse(saved);
+                        setItinerary(parsed); 
+                    } catch(e) {}
+                } else {
+                    setItinerary(defaultItineraryData);
+                }
+                setLoaded(true);
+            }, []);
+
+            useEffect(() => {
+                if(loaded) localStorage.setItem('myOkamotoTrip_Clean', JSON.stringify(itinerary));
+            }, [itinerary, loaded]);
+
+            const currentDayIndex = itinerary.findIndex(d => d.day === activeDay);
+            const currentDayData = itinerary[currentDayIndex];
+
+            // 統計
+            const stats = useMemo(() => {
+                let totalCash = 0;
+                let totalSaved = 0;
+                let dailyCash = 0;
+
+                itinerary.forEach(day => {
+                    day.locations.forEach(item => {
+                        if (item.type === 'transport') {
+                            const cost = parseInt(item.cost) || 0;
+                            if (item.jrPass) {
+                                totalSaved += cost;
+                            } else {
+                                totalCash += cost;
+                                if (day.day === activeDay) {
+                                    dailyCash += cost;
+                                }
+                            }
+                        }
+                    });
+                });
+
+                return { totalCash, totalSaved, dailyCash };
+            }, [itinerary, activeDay]);
+
+            // CRUD Handlers
+            const updateLocations = (newLocations) => {
+                const newItinerary = [...itinerary];
+                newItinerary[currentDayIndex] = { ...currentDayData, locations: newLocations };
+                setItinerary(newItinerary);
+            };
+            const handleUpdateItem = (idx, item) => {
+                const newLocs = [...currentDayData.locations];
+                newLocs[idx] = item;
+                updateLocations(newLocs);
+            };
+            const handleDeleteItem = (idx) => {
+                const newLocs = currentDayData.locations.filter((_, i) => i !== idx);
+                updateLocations(newLocs);
+            };
+            const handleDuplicateItem = (idx) => {
+                const item = { ...currentDayData.locations[idx], id: Date.now() };
+                const newLocs = [...currentDayData.locations];
+                newLocs.splice(idx + 1, 0, item);
+                updateLocations(newLocs);
+            };
+            const handleAddItem = () => {
+                const newName = "新行程";
+                updateLocations([...currentDayData.locations, { 
+                    id: Date.now(), time: "時間", name: newName, address: "", type: "activity", cost: 0, jrPass: false, note: ""
+                }]);
+            };
+
+            // 檔案匯出 (下載/儲存)
+            const handleExport = async () => {
+                const dataStr = JSON.stringify(itinerary, null, 2);
+                
+                if ('showSaveFilePicker' in window) {
+                    try {
+                        const handle = await window.showSaveFilePicker({
+                            suggestedName: `okayama_trip_${new Date().toISOString().slice(0,10)}.json`,
+                            types: [{
+                                description: 'JSON Files',
+                                accept: { 'application/json': ['.json'] },
+                            }],
+                        });
+                        const writable = await handle.createWritable();
+                        await writable.write(dataStr);
+                        await writable.close();
+                        alert("檔案儲存成功！");
+                        return;
+                    } catch (err) {
+                        if (err.name !== 'AbortError') console.error('SaveFilePicker failed:', err);
+                        else return;
+                    }
+                }
+
+                const blob = new Blob([dataStr], { type: "application/json" });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `okayama_trip_${new Date().toISOString().slice(0,10)}.json`;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+            };
+
+            // 檔案匯入 (讀取)
+            const handleImportClick = () => {
+                fileInputRef.current.click();
+            };
+
+            const handleFileChange = (e) => {
+                const file = e.target.files[0];
+                if (!file) return;
+                const reader = new FileReader();
+                reader.onload = (event) => {
+                    try {
+                        const parsed = JSON.parse(event.target.result);
+                        if (Array.isArray(parsed) && parsed.length > 0 && parsed[0].locations) {
+                            if(confirm("確定要讀取此檔案嗎？目前的行程將被覆蓋。")) {
+                                setItinerary(parsed);
+                                alert("行程讀取成功！");
+                            }
+                        } else {
+                            alert("檔案格式不正確，請確認這是本系統匯出的 JSON 檔。");
+                        }
+                    } catch (err) {
+                        alert("無法讀取檔案，請確認檔案格式。");
+                    }
+                    e.target.value = null; // Reset input
+                };
+                reader.readAsText(file);
+            };
+
+            // Drag & Drop
+            const handleDragStart = (e, position) => {
+                dragItem.current = position;
+                e.target.classList.add('dragging');
+            };
+            const handleDragEnter = (e, position) => {
+                dragOverItem.current = position;
+                if (dragItem.current !== null && dragItem.current !== position) {
+                    const copyListItems = [...currentDayData.locations];
+                    const dragItemContent = copyListItems[dragItem.current];
+                    copyListItems.splice(dragItem.current, 1);
+                    copyListItems.splice(position, 0, dragItemContent);
+                    dragItem.current = position;
+                    updateLocations(copyListItems);
+                }
+            };
+            const handleDragEnd = (e) => {
+                dragItem.current = null;
+                dragOverItem.current = null;
+                e.target.classList.remove('dragging');
+            };
+
+            if (!loaded) return null;
+
+            return (
+                <div className="min-h-screen pb-40 relative">
+                    <header className="bg-stone-900 text-white py-8 px-6 text-center relative overflow-hidden flex flex-col items-center">
+                        <div className="absolute inset-0 opacity-10" style={{backgroundImage: "radial-gradient(#ffffff 1px, transparent 1px)", backgroundSize: "20px 20px"}}></div>
+                        <div className="relative z-10 w-full max-w-4xl flex justify-between items-start mb-4">
+                             {/* 標題區 */}
+                            <div className="text-left">
+                                <h1 className="text-2xl md:text-3xl font-serif font-bold text-momo-pink mb-1">岡山桃太郎之旅</h1>
+                                <p className="text-stone-400 text-xs tracking-widest">SIMPLE CLEAN EDITION</p>
+                            </div>
+
+                            {/* 功能按鈕區 */}
+                            <div className="flex gap-2">
+                                <button onClick={handleExport} className="flex items-center gap-1 bg-stone-700 hover:bg-stone-600 px-3 py-1.5 rounded-lg text-xs transition-colors" title="匯出行程 (下載)">
+                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
+                                    <span className="hidden md:inline">匯出</span>
+                                </button>
+                                <button onClick={handleImportClick} className="flex items-center gap-1 bg-stone-700 hover:bg-stone-600 px-3 py-1.5 rounded-lg text-xs transition-colors" title="匯入行程 (讀取)">
+                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path></svg>
+                                    <span className="hidden md:inline">匯入</span>
+                                </button>
+                                <input type="file" ref={fileInputRef} onChange={handleFileChange} accept=".json" className="hidden" />
+                                
+                                <button onClick={() => {if(window.confirm("重置將清除所有修改？")) { localStorage.removeItem('myOkamotoTrip_Clean'); window.location.reload(); }}} 
+                                    className="flex items-center gap-1 bg-stone-800 hover:bg-red-900/50 text-stone-400 hover:text-red-300 px-3 py-1.5 rounded-lg text-xs transition-colors" title="重置">
+                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
+                                </button>
+                            </div>
+                        </div>
+                    </header>
+
+                    <div className="max-w-3xl mx-auto px-4 mt-6">
+                        <div className="flex gap-2 overflow-x-auto pb-4 scrollbar-hide sticky top-2 z-30 py-2 bg-gradient-to-b from-[#fcfaf8] to-transparent">
+                            {itinerary.map((data) => (
+                                <button key={data.day} onClick={() => setActiveDay(data.day)}
+                                    className={`px-4 py-2 rounded-full text-sm font-bold whitespace-nowrap transition-all shadow-sm
+                                        ${activeDay === data.day ? 'bg-stone-800 text-white transform scale-105' : 'bg-white text-stone-400 border border-stone-200'}`}>
+                                    Day {data.day}
+                                </button>
+                            ))}
+                        </div>
+
+                        <div key={activeDay} className="fade-in mt-2 pb-12">
+                            <div className="mb-6 px-2">
+                                <h2 className="text-2xl font-serif font-bold text-stone-800 flex items-center gap-2">
+                                    <span className="text-momo-red">Day {currentDayData.day}</span>
+                                    {currentDayData.title}
+                                </h2>
+                                <p className="text-stone-500 text-sm mt-1 ml-1">{currentDayData.subtitle}</p>
+                            </div>
+
+                            <div className="space-y-4 relative pl-2">
+                                <div className="absolute left-7 top-4 bottom-4 w-0.5 bg-stone-200"></div>
+                                {currentDayData.locations.map((item, index) => (
+                                    <LocationCard 
+                                        key={item.id} item={item} index={index}
+                                        isLast={index === currentDayData.locations.length - 1}
+                                        onUpdate={handleUpdateItem} onDelete={handleDeleteItem} 
+                                        onDuplicate={handleDuplicateItem}
+                                        onDragStart={handleDragStart} onDragEnter={handleDragEnter} onDragEnd={handleDragEnd}
+                                    />
+                                ))}
+                                <button onClick={handleAddItem} className="ml-14 w-[calc(100%-3.5rem)] py-3 border-2 border-dashed border-stone-300 rounded-xl text-stone-400 hover:border-momo-pink hover:text-momo-red hover:bg-rose-50 transition-colors font-bold text-sm">
+                                    + 新增行程
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* 懸浮費用統計面板 (可收納) */}
+                    <div className={`fixed bottom-6 right-4 left-4 md:left-auto md:w-80 cost-panel rounded-2xl transition-all duration-300 z-40 overflow-hidden ${isPanelExpanded ? 'p-4' : 'p-3'}`}>
+                        <div 
+                            className="flex justify-between items-center cursor-pointer"
+                            onClick={() => setIsPanelExpanded(!isPanelExpanded)}
+                        >
+                            <div className="flex items-center gap-2">
+                                <span className="text-stone-300 text-xs uppercase tracking-wider font-bold">
+                                    {isPanelExpanded ? "費用統計" : "Total Payment"}
+                                </span>
+                                {!isPanelExpanded && (
+                                    <span className="text-momo-pink font-mono font-bold">
+                                        ¥{stats.totalCash.toLocaleString()}
+                                    </span>
+                                )}
+                            </div>
+                            
+                            <button className="text-stone-400 hover:text-white transition-colors">
+                                <svg 
+                                    className={`w-5 h-5 transform transition-transform ${isPanelExpanded ? 'rotate-180' : ''}`} 
+                                    fill="none" stroke="currentColor" viewBox="0 0 24 24"
+                                >
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
+                                </svg>
+                            </button>
+                        </div>
+
+                        {isPanelExpanded && (
+                            <div className="mt-3 pt-3 border-t border-white/10 flex flex-col gap-2 fade-in">
+                                 <div className="flex justify-between items-center">
+                                    <span className="text-gray-300 text-sm">本日自付交通費</span>
+                                    <span className="text-lg font-mono font-bold text-white">¥{stats.dailyCash.toLocaleString()}</span>
+                                </div>
+                                <div className="grid grid-cols-2 gap-4 pt-1">
+                                    <div>
+                                        <p className="text-[10px] text-gray-400 uppercase tracking-wider">Total Payment</p>
+                                        <p className="text-xl font-mono font-bold text-momo-pink">¥{stats.totalCash.toLocaleString()}</p>
+                                    </div>
+                                    <div className="text-right">
+                                        <p className="text-[10px] text-gray-400 uppercase tracking-wider">JR Pass Saved</p>
+                                        <p className="text-xl font-mono font-bold text-green-400">¥{stats.totalSaved.toLocaleString()}</p>
+                                    </div>
+                                </div>
+                                {stats.totalSaved > 23000 && (
+                                    <div className="text-center text-[10px] text-green-300 bg-green-900/30 rounded py-1 animate-pulse mt-1">
+                                        ✨ 恭喜！JR Pass 已回本 (票價 ¥23,000)
+                                    </div>
+                                )}
+                            </div>
+                        )}
+                    </div>
+                </div>
+            );
+        };
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+</html>
