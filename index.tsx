@@ -28,6 +28,7 @@ interface VocabWord {
   english: string;
   chinese: string;
   emoji: string;
+  generatedImage?: string; // New field for AI generated image
 }
 
 interface QuizItem extends VocabWord {
@@ -64,26 +65,21 @@ const decodeAudioData = async (
 
 // --- Custom Components & Icons ---
 
-// A cute Mochi Mascot that changes expression
 const Mascot = ({ mood = "happy", size = 100 }: { mood?: "happy" | "thinking" | "excited" | "sad"; size?: number }) => {
   const eyeColor = "#5D5C61";
   const blushColor = "#FFB7B2";
 
   return (
     <svg width={size} height={size} viewBox="0 0 200 200" style={{ overflow: 'visible' }}>
-      {/* Body: Soft blob shape */}
       <path
         d="M40 100 C 40 40, 160 40, 160 100 C 160 150, 40 150, 40 100"
         fill="#FFFFFF"
         stroke="#5D5C61"
         strokeWidth="4"
       />
-      
-      {/* Blush */}
       <circle cx="60" cy="110" r="10" fill={blushColor} opacity="0.6" />
       <circle cx="140" cy="110" r="10" fill={blushColor} opacity="0.6" />
 
-      {/* Eyes & Mouth based on mood */}
       {mood === "happy" && (
         <>
           <circle cx="70" cy="90" r="8" fill={eyeColor} />
@@ -97,7 +93,6 @@ const Mascot = ({ mood = "happy", size = 100 }: { mood?: "happy" | "thinking" | 
            <line x1="60" y1="90" x2="80" y2="90" stroke={eyeColor} strokeWidth="4" strokeLinecap="round" />
            <line x1="120" y1="90" x2="140" y2="90" stroke={eyeColor} strokeWidth="4" strokeLinecap="round" />
            <circle cx="100" cy="115" r="5" fill={eyeColor} />
-           {/* Sweat drop */}
            <path d="M165 70 Q 175 90, 165 95 Q 155 90, 165 70" fill="#B5EAD7" />
         </>
       )}
@@ -107,7 +102,6 @@ const Mascot = ({ mood = "happy", size = 100 }: { mood?: "happy" | "thinking" | 
           <path d="M60 90 L 70 80 L 80 90" fill="none" stroke={eyeColor} strokeWidth="4" strokeLinecap="round" strokeLinejoin="round" />
           <path d="M120 90 L 130 80 L 140 90" fill="none" stroke={eyeColor} strokeWidth="4" strokeLinecap="round" strokeLinejoin="round" />
           <path d="M85 110 Q 100 130, 115 110" fill="none" stroke={eyeColor} strokeWidth="4" strokeLinecap="round" />
-          {/* Sparkles */}
           <text x="10" y="50" fontSize="40">✨</text>
         </>
       )}
@@ -171,10 +165,11 @@ const App = () => {
       const prompt = `
         Generate a list of 8 distinct, simple English nouns related to '${selectedCategory}'.
         Target audience: Kids.
-        Return JSON format: Array of objects with keys: 'english', 'chinese' (Traditional Chinese), 'emoji'.
-        Make sure the words are common and easy to visualize with an emoji.
+        Return JSON format.
+        Make sure the words are common and easy to visualize.
       `;
 
+      // Use a wrapped object schema for better stability
       const response = await ai.current.models.generateContent({
         model: "gemini-2.5-flash",
         contents: prompt,
@@ -182,23 +177,31 @@ const App = () => {
           systemInstruction: SYSTEM_INSTRUCTION,
           responseMimeType: "application/json",
           responseSchema: {
-            type: Type.ARRAY,
-            items: {
-              type: Type.OBJECT,
-              properties: {
-                english: { type: Type.STRING },
-                chinese: { type: Type.STRING },
-                emoji: { type: Type.STRING },
-              },
-              required: ["english", "chinese", "emoji"],
-            },
+            type: Type.OBJECT,
+            properties: {
+              items: {
+                type: Type.ARRAY,
+                items: {
+                  type: Type.OBJECT,
+                  properties: {
+                    english: { type: Type.STRING },
+                    chinese: { type: Type.STRING },
+                    emoji: { type: Type.STRING },
+                  },
+                  required: ["english", "chinese", "emoji"],
+                },
+              }
+            }
           },
         },
       });
 
       const text = response.text;
       if (text) {
-        const data: VocabWord[] = JSON.parse(text);
+        // Parse the wrapped object
+        const parsed = JSON.parse(text);
+        const data: VocabWord[] = parsed.items || parsed; // fallback if needed
+
         setVocabList(data);
         
         const qItems = data.map((item) => {
@@ -210,13 +213,19 @@ const App = () => {
         setQuizItems(qItems);
         setScreen("learn");
       } else {
-        throw new Error("No data returned");
+        throw new Error("No data returned from AI");
       }
     } catch (e) {
       console.error(e);
-      setError("發生了一點小錯誤，請再試一次～");
+      setError("讀取單字失敗了，請檢查 Key 或網路連線～");
       setScreen("home");
     }
+  };
+
+  const handleUpdateImage = (word: string, base64: string) => {
+    setVocabList(prev => prev.map(item => 
+      item.english === word ? { ...item, generatedImage: base64 } : item
+    ));
   };
 
   const handleHome = () => {
@@ -224,7 +233,6 @@ const App = () => {
     setVocabList([]);
   };
 
-  // --- Login Screen ---
   if (!apiKey) {
     return (
       <div style={styles.container}>
@@ -265,12 +273,10 @@ const App = () => {
     );
   }
 
-  // --- Main App Screen ---
   return (
     <div style={styles.container}>
       <CloudDecoration />
       
-      {/* Navbar */}
       <nav style={styles.nav}>
         <div style={styles.navBrand} onClick={handleHome}>
           <span style={{fontSize: '24px'}}>🌟</span> Happy English
@@ -293,6 +299,7 @@ const App = () => {
           <LearnMode
             items={vocabList}
             ai={ai.current}
+            onUpdateImage={handleUpdateImage}
             onSwitchToQuiz={() => setScreen("quiz")}
           />
         )}
@@ -360,17 +367,21 @@ const LoadingView = () => (
 const LearnMode = ({
   items,
   ai,
+  onUpdateImage,
   onSwitchToQuiz,
 }: {
   items: VocabWord[];
   ai: GoogleGenAI;
+  onUpdateImage: (word: string, base64: string) => void;
   onSwitchToQuiz: () => void;
 }) => {
   const [idx, setIdx] = useState(0);
   const [isPlaying, setIsPlaying] = useState(false);
+  const [isGeneratingImg, setIsGeneratingImg] = useState(false);
 
   const current = items[idx];
 
+  // Play Audio
   const playAudio = async () => {
     if (isPlaying || !ai) return;
     setIsPlaying(true);
@@ -399,17 +410,60 @@ const LearnMode = ({
         setIsPlaying(false);
       }
     } catch (e) {
-      console.error(e);
+      console.error("TTS Error", e);
       setIsPlaying(false);
     }
   };
 
+  // Generate Illustration
+  const generateIllustration = async () => {
+    if (!ai || current.generatedImage || isGeneratingImg) return;
+    setIsGeneratingImg(true);
+    try {
+      // Use gemini-2.5-flash-image for image generation
+      const response = await ai.models.generateContent({
+        model: 'gemini-2.5-flash-image',
+        contents: {
+          parts: [
+            {
+              text: `Draw a cute, simple, kawaii style vector illustration of "${current.english}". Flat design, pastel colors, white background, high quality. Do not include any text in the image.`
+            },
+          ],
+        },
+      });
+
+      let base64Img = null;
+      for (const part of response.candidates?.[0]?.content?.parts || []) {
+        if (part.inlineData) {
+          base64Img = part.inlineData.data;
+          break;
+        }
+      }
+
+      if (base64Img) {
+        onUpdateImage(current.english, `data:image/png;base64,${base64Img}`);
+      }
+    } catch (e) {
+      console.error("Image Gen Error", e);
+    } finally {
+      setIsGeneratingImg(false);
+    }
+  };
+
+  // Effects when current card changes
   useEffect(() => {
-    const timer = setTimeout(() => {
+    // 1. Play audio after a short delay
+    const audioTimer = setTimeout(() => {
         playAudio();
     }, 500);
-    return () => clearTimeout(timer);
-  }, [current]);
+
+    // 2. Generate image if not exists
+    if (!current.generatedImage) {
+        generateIllustration();
+    }
+
+    return () => clearTimeout(audioTimer);
+  }, [current.english]); // Dependency on english word ensures effect runs on change
 
   const next = () => { if (idx < items.length - 1) setIdx(idx + 1); };
   const prev = () => { if (idx > 0) setIdx(idx - 1); };
@@ -423,7 +477,18 @@ const LearnMode = ({
 
       <div style={styles.flashCardOuter}>
         <div style={styles.flashCardInner}>
-          <div style={styles.emojiLarge}>{current.emoji}</div>
+          {/* Image Area */}
+          <div style={styles.imageContainer}>
+             {current.generatedImage ? (
+                <img src={current.generatedImage} alt={current.english} style={styles.generatedImg} />
+             ) : (
+                <div style={{position: 'relative', display: 'flex', flexDirection: 'column', alignItems: 'center'}}>
+                   <div style={styles.emojiLarge}>{current.emoji}</div>
+                   {isGeneratingImg && <span style={styles.loadingImgText}>✨ 繪製中...</span>}
+                </div>
+             )}
+          </div>
+
           <div style={styles.wordEnglish}>{current.english}</div>
           <div style={styles.wordChinese}>{current.chinese}</div>
           
@@ -519,7 +584,14 @@ const QuizMode = ({
       </div>
 
       <div style={styles.quizMain}>
-        <div style={styles.quizEmoji}>{current.emoji}</div>
+        {/* Reuse generated image if available, else emoji */}
+        <div style={styles.quizImageContainer}>
+          {current.generatedImage ? (
+             <img src={current.generatedImage} alt={current.english} style={{width: '100px', height: '100px', objectFit: 'contain'}} />
+          ) : (
+             <div style={styles.quizEmoji}>{current.emoji}</div>
+          )}
+        </div>
         
         <div style={styles.optionsList}>
           {current.options.map((opt) => {
@@ -794,9 +866,30 @@ const styles: Record<string, React.CSSProperties> = {
     border: "4px solid #FFF",
     position: "relative",
   },
+  imageContainer: {
+    width: '200px',
+    height: '200px',
+    marginBottom: '20px',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  generatedImg: {
+    width: '100%',
+    height: '100%',
+    objectFit: 'contain',
+    borderRadius: '10px',
+  },
+  loadingImgText: {
+    marginTop: '10px',
+    fontSize: '12px',
+    color: '#888',
+    backgroundColor: 'rgba(255,255,255,0.8)',
+    padding: '4px 8px',
+    borderRadius: '10px',
+  },
   emojiLarge: {
     fontSize: "100px",
-    marginBottom: "20px",
     filter: "drop-shadow(0 5px 5px rgba(0,0,0,0.1))",
   },
   wordEnglish: {
@@ -870,9 +963,15 @@ const styles: Record<string, React.CSSProperties> = {
     alignItems: "center",
     boxShadow: "0 5px 20px rgba(0,0,0,0.05)",
   },
+  quizImageContainer: {
+    height: '100px',
+    marginBottom: '20px',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   quizEmoji: {
     fontSize: "80px",
-    marginBottom: "20px",
   },
   optionsList: {
     width: "100%",
