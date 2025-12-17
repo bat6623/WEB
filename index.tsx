@@ -208,11 +208,9 @@ const App = () => {
                     emoji: { type: Type.STRING },
                   },
                   required: ["english", "chinese", "emoji"],
-                  propertyOrdering: ["english", "chinese", "emoji"]
                 },
               }
             },
-            propertyOrdering: ["items"]
           },
         },
       });
@@ -250,15 +248,27 @@ const App = () => {
       console.error("Fetch Error:", e);
       let friendlyMsg = "讀取失敗，請稍後再試。";
       let detail = e.message || String(e);
+      let shouldLogout = false;
 
-      if (detail.includes("400")) friendlyMsg = "API Key 無效 (400) - 請檢查 Key 是否正確。";
-      else if (detail.includes("403")) friendlyMsg = "API 權限不足 (403) - 請確認 Google Cloud 專案已啟用 API。";
+      if (detail.includes("400")) {
+        friendlyMsg = "API Key 無效 (400) - 請檢查 Key 是否正確。";
+        shouldLogout = true;
+      }
+      else if (detail.includes("403")) {
+        friendlyMsg = "API 權限不足 (403) - 請確認 Google Cloud 專案已啟用 API。";
+        shouldLogout = true;
+      }
       else if (detail.includes("429")) friendlyMsg = "請求太頻繁 (429) - 請休息一下再試。";
       else if (detail.includes("503") || detail.includes("500")) friendlyMsg = "AI 伺服器忙碌中，請重試。";
       
       setError(friendlyMsg);
       setErrorDetail(detail);
-      setScreen("home");
+
+      if (shouldLogout) {
+        setApiKey("");
+      } else {
+        setScreen("home");
+      }
     }
   };
 
@@ -280,6 +290,12 @@ const App = () => {
       <div style={styles.container}>
          <CloudDecoration />
          <div style={styles.centerContent}>
+            {error && (
+              <div style={styles.errorBoxFloating}>
+                <Mascot mood="error" size={30} />
+                <span>{error}</span>
+              </div>
+            )}
             <div style={styles.loginCard}>
               <Mascot mood="happy" size={120} />
               <h1 style={styles.logoText}>Happy English</h1>
@@ -766,6 +782,20 @@ const styles: Record<string, React.CSSProperties> = {
     marginBottom: "20px",
     boxShadow: "0 4px 10px rgba(211, 47, 47, 0.1)",
     border: "2px solid #FFCDD2",
+  },
+  errorBoxFloating: {
+    backgroundColor: THEMES.errorBg,
+    color: THEMES.errorText,
+    padding: "15px 25px",
+    borderRadius: "30px",
+    marginBottom: "20px",
+    boxShadow: "0 8px 20px rgba(211, 47, 47, 0.2)",
+    border: "2px solid #FFCDD2",
+    display: "flex",
+    alignItems: "center",
+    gap: "10px",
+    fontWeight: "bold",
+    maxWidth: "90%",
   },
   // Home
   homeContainer: {
