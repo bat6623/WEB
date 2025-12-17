@@ -11,13 +11,16 @@ Always return valid JSON.
 The vocabulary should be suitable for beginners (A1 level).
 `;
 
+// Japanese Pastel Palette
 const THEMES = {
-  primary: "#FFD700", // Gold/Yellow
-  secondary: "#4ADE80", // Green
-  accent: "#F472B6", // Pink
-  text: "#333333",
-  bg: "#F0F9FF", // Light Blue
+  primary: "#FF9AA2", // Sakura Pink
+  secondary: "#B5EAD7", // Mint Green
+  accent: "#FFDAC1", // Peach/Apricot
+  text: "#5D5C61", // Soft Dark Grey
+  bg: "#FFF9F0", // Warm Cream/Ivory
   cardBg: "#FFFFFF",
+  highlight: "#C7CEEA", // Periwinkle
+  wrong: "#FFB7B2", // Soft Red
 };
 
 // Define types
@@ -44,7 +47,6 @@ const decodeAudioData = async (
     bytes[i] = binaryString.charCodeAt(i);
   }
   
-  // Gemini TTS returns raw PCM data (24kHz, 1 channel, 16-bit integer)
   const sampleRate = 24000;
   const numChannels = 1;
   const dataInt16 = new Int16Array(bytes.buffer);
@@ -60,10 +62,79 @@ const decodeAudioData = async (
   return buffer;
 };
 
+// --- Custom Components & Icons ---
+
+// A cute Mochi Mascot that changes expression
+const Mascot = ({ mood = "happy", size = 100 }: { mood?: "happy" | "thinking" | "excited" | "sad"; size?: number }) => {
+  const eyeColor = "#5D5C61";
+  const blushColor = "#FFB7B2";
+
+  return (
+    <svg width={size} height={size} viewBox="0 0 200 200" style={{ overflow: 'visible' }}>
+      {/* Body: Soft blob shape */}
+      <path
+        d="M40 100 C 40 40, 160 40, 160 100 C 160 150, 40 150, 40 100"
+        fill="#FFFFFF"
+        stroke="#5D5C61"
+        strokeWidth="4"
+      />
+      
+      {/* Blush */}
+      <circle cx="60" cy="110" r="10" fill={blushColor} opacity="0.6" />
+      <circle cx="140" cy="110" r="10" fill={blushColor} opacity="0.6" />
+
+      {/* Eyes & Mouth based on mood */}
+      {mood === "happy" && (
+        <>
+          <circle cx="70" cy="90" r="8" fill={eyeColor} />
+          <circle cx="130" cy="90" r="8" fill={eyeColor} />
+          <path d="M90 110 Q 100 120, 110 110" fill="none" stroke={eyeColor} strokeWidth="4" strokeLinecap="round" />
+        </>
+      )}
+
+      {mood === "thinking" && (
+        <>
+           <line x1="60" y1="90" x2="80" y2="90" stroke={eyeColor} strokeWidth="4" strokeLinecap="round" />
+           <line x1="120" y1="90" x2="140" y2="90" stroke={eyeColor} strokeWidth="4" strokeLinecap="round" />
+           <circle cx="100" cy="115" r="5" fill={eyeColor} />
+           {/* Sweat drop */}
+           <path d="M165 70 Q 175 90, 165 95 Q 155 90, 165 70" fill="#B5EAD7" />
+        </>
+      )}
+
+      {mood === "excited" && (
+        <>
+          <path d="M60 90 L 70 80 L 80 90" fill="none" stroke={eyeColor} strokeWidth="4" strokeLinecap="round" strokeLinejoin="round" />
+          <path d="M120 90 L 130 80 L 140 90" fill="none" stroke={eyeColor} strokeWidth="4" strokeLinecap="round" strokeLinejoin="round" />
+          <path d="M85 110 Q 100 130, 115 110" fill="none" stroke={eyeColor} strokeWidth="4" strokeLinecap="round" />
+          {/* Sparkles */}
+          <text x="10" y="50" fontSize="40">✨</text>
+        </>
+      )}
+
+      {mood === "sad" && (
+        <>
+          <path d="M60 95 L 70 100 L 80 95" fill="none" stroke={eyeColor} strokeWidth="4" strokeLinecap="round" />
+          <path d="M120 95 L 130 100 L 140 95" fill="none" stroke={eyeColor} strokeWidth="4" strokeLinecap="round" />
+          <path d="M90 120 Q 100 110, 110 120" fill="none" stroke={eyeColor} strokeWidth="4" strokeLinecap="round" />
+          <path d="M150 60 Q 140 80, 150 85" fill="none" stroke="#87CEEB" strokeWidth="3" />
+        </>
+      )}
+    </svg>
+  );
+};
+
+const CloudDecoration = () => (
+  <div style={styles.backgroundDecor}>
+    <div style={{...styles.cloud, top: '10%', left: '-5%', width: '150px', height: '60px', animationDelay: '0s'}}></div>
+    <div style={{...styles.cloud, top: '20%', right: '-5%', width: '120px', height: '50px', animationDelay: '2s'}}></div>
+    <div style={{...styles.cloud, bottom: '15%', left: '10%', width: '100px', height: '40px', animationDelay: '4s'}}></div>
+  </div>
+);
+
 // --- App Components ---
 
 const App = () => {
-  // Allow setting API key from state if not found in env
   const [apiKey, setApiKey] = useState(process.env.API_KEY || "");
   const [inputKey, setInputKey] = useState("");
   
@@ -82,12 +153,12 @@ const App = () => {
   }, [apiKey]);
 
   const categories = [
-    { id: "animals", label: "🐶 動物 (Animals)", color: "#FFB74D" },
-    { id: "fruit", label: "🍎 水果 (Fruit)", color: "#EF5350" },
-    { id: "transport", label: "🚗 交通 (Transport)", color: "#42A5F5" },
-    { id: "school", label: "🎒 學校 (School)", color: "#AB47BC" },
-    { id: "colors", label: "🎨 顏色 (Colors)", color: "#EC407A" },
-    { id: "body", label: "👀 身體 (Body)", color: "#8D6E63" },
+    { id: "animals", label: "動物", sub: "Animals", icon: "🐶", color: "#FF9AA2" },
+    { id: "fruit", label: "水果", sub: "Fruit", icon: "🍓", color: "#FFB7B2" },
+    { id: "transport", label: "交通", sub: "Transport", icon: "🚗", color: "#85E3FF" },
+    { id: "school", label: "學校", sub: "School", icon: "🎒", color: "#C7CEEA" },
+    { id: "colors", label: "顏色", sub: "Colors", icon: "🎨", color: "#E2F0CB" },
+    { id: "yummy", label: "美食", sub: "Yummy", icon: "🍔", color: "#FFDAC1" },
   ];
 
   const fetchVocabulary = async (selectedCategory: string) => {
@@ -130,23 +201,20 @@ const App = () => {
         const data: VocabWord[] = JSON.parse(text);
         setVocabList(data);
         
-        // Prepare quiz items (add distractors)
         const qItems = data.map((item) => {
           const others = data.filter((w) => w.english !== item.english);
-          // Shuffle others and take 3
           const distractors = others.sort(() => 0.5 - Math.random()).slice(0, 3).map(w => w.english);
           const options = [...distractors, item.english].sort(() => 0.5 - Math.random());
           return { ...item, options };
         });
         setQuizItems(qItems);
-        
-        setScreen("learn"); // Default to learn mode after fetching
+        setScreen("learn");
       } else {
         throw new Error("No data returned");
       }
     } catch (e) {
       console.error(e);
-      setError("發生錯誤，請稍後再試。");
+      setError("發生了一點小錯誤，請再試一次～");
       setScreen("home");
     }
   };
@@ -156,39 +224,40 @@ const App = () => {
     setVocabList([]);
   };
 
-  // --- Login Screen (API Key Input) ---
+  // --- Login Screen ---
   if (!apiKey) {
     return (
       <div style={styles.container}>
+         <CloudDecoration />
          <div style={styles.centerContent}>
-            <div style={styles.flashCard}>
-              <h1 style={{...styles.title, fontSize: '28px'}}>🌟 Happy English</h1>
-              <p style={{marginBottom: '20px', color: '#666', textAlign: 'center'}}>
-                請輸入您的 Google Gemini API Key 開始學習！
-                <br/>
-                (Please enter your API Key to start)
+            <div style={styles.loginCard}>
+              <Mascot mood="happy" size={120} />
+              <h1 style={styles.logoText}>Happy English</h1>
+              <p style={styles.loginSubText}>
+                歡迎來到快樂英語教室！<br/>
+                請輸入 Key 開啟學習之旅 ✨
               </p>
               <input 
                 type="password" 
-                placeholder="Paste API Key here..."
+                placeholder="在此貼上 API Key..."
                 style={styles.input}
                 value={inputKey}
                 onChange={(e) => setInputKey(e.target.value)}
               />
               <button 
-                style={styles.bigButton} 
+                style={styles.startButton} 
                 onClick={() => setApiKey(inputKey)}
                 disabled={!inputKey.trim()}
               >
-                開始 (Start) 🚀
+                Let's Go! 🎈
               </button>
               <a 
                 href="https://aistudio.google.com/app/apikey" 
                 target="_blank" 
                 rel="noreferrer"
-                style={{marginTop: '20px', color: '#888', fontSize: '12px'}}
+                style={styles.linkText}
               >
-                取得 API Key (Get API Key)
+                還沒有 Key 嗎？點我取得
               </a>
             </div>
          </div>
@@ -199,16 +268,19 @@ const App = () => {
   // --- Main App Screen ---
   return (
     <div style={styles.container}>
-      <header style={styles.header}>
-        <div style={styles.logo} onClick={handleHome}>
-          🌟 Happy English
+      <CloudDecoration />
+      
+      {/* Navbar */}
+      <nav style={styles.nav}>
+        <div style={styles.navBrand} onClick={handleHome}>
+          <span style={{fontSize: '24px'}}>🌟</span> Happy English
         </div>
         {screen !== "home" && (
-          <button style={styles.homeButton} onClick={handleHome}>
-            🏠 回首頁
+          <button style={styles.navHomeBtn} onClick={handleHome}>
+            回首頁
           </button>
         )}
-      </header>
+      </nav>
 
       <main style={styles.main}>
         {screen === "home" && (
@@ -250,16 +322,24 @@ const CategorySelect = ({
   onSelect: (id: string) => void;
 }) => {
   return (
-    <div style={styles.categoryGrid}>
-      <h2 style={styles.title}>你要學什麼呢？(What do you want to learn?)</h2>
-      <div style={styles.grid}>
+    <div style={styles.homeContainer}>
+      <div style={styles.mascotHeader}>
+        <Mascot mood="happy" size={100} />
+        <div style={styles.bubble}>
+          今天想學什麼呢？<br/>(What shall we learn?)
+        </div>
+      </div>
+      
+      <div style={styles.categoryGrid}>
         {categories.map((cat) => (
           <button
             key={cat.id}
             style={{ ...styles.categoryCard, backgroundColor: cat.color }}
             onClick={() => onSelect(cat.id)}
           >
-            <span style={styles.catLabel}>{cat.label}</span>
+            <div style={styles.catIcon}>{cat.icon}</div>
+            <div style={styles.catLabel}>{cat.label}</div>
+            <div style={styles.catSub}>{cat.sub}</div>
           </button>
         ))}
       </div>
@@ -269,8 +349,11 @@ const CategorySelect = ({
 
 const LoadingView = () => (
   <div style={styles.centerContent}>
-    <div style={styles.spinner}>🤖</div>
-    <p style={styles.loadingText}>正在準備教材... (Preparing lessons...)</p>
+    <Mascot mood="thinking" size={150} />
+    <p style={styles.loadingText}>
+      正在準備可愛的單字卡...<br/>
+      (Preparing flashcards...)
+    </p>
   </div>
 );
 
@@ -294,15 +377,11 @@ const LearnMode = ({
     try {
       const response = await ai.models.generateContent({
         model: "gemini-2.5-flash-preview-tts",
-        contents: {
-          parts: [{ text: current.english }],
-        },
+        contents: { parts: [{ text: current.english }] },
         config: {
           responseModalities: [Modality.AUDIO],
           speechConfig: {
-            voiceConfig: {
-              prebuiltVoiceConfig: { voiceName: "Puck" },
-            },
+            voiceConfig: { prebuiltVoiceConfig: { voiceName: "Puck" } },
           },
         },
       });
@@ -325,7 +404,6 @@ const LearnMode = ({
     }
   };
 
-  // Auto-play when card changes
   useEffect(() => {
     const timer = setTimeout(() => {
         playAudio();
@@ -333,49 +411,36 @@ const LearnMode = ({
     return () => clearTimeout(timer);
   }, [current]);
 
-  const next = () => {
-    if (idx < items.length - 1) setIdx(idx + 1);
-  };
-  const prev = () => {
-    if (idx > 0) setIdx(idx - 1);
-  };
+  const next = () => { if (idx < items.length - 1) setIdx(idx + 1); };
+  const prev = () => { if (idx > 0) setIdx(idx - 1); };
 
   return (
-    <div style={styles.learnContainer}>
-      <div style={styles.modeToggle}>
-        <button style={styles.activeModeBtn}>📖 學習 (Learn)</button>
-        <button style={styles.inactiveModeBtn} onClick={onSwitchToQuiz}>
-          🎮 測驗 (Quiz)
-        </button>
+    <div style={styles.modeContainer}>
+      <div style={styles.tabContainer}>
+        <button style={styles.activeTab}>📖 學習 (Learn)</button>
+        <button style={styles.inactiveTab} onClick={onSwitchToQuiz}>🎮 測驗 (Quiz)</button>
       </div>
 
-      <div style={styles.flashCard}>
-        <div style={styles.emojiDisplay}>{current.emoji}</div>
-        <div style={styles.wordDisplay}>{current.english}</div>
-        <div style={styles.chineseDisplay}>{current.chinese}</div>
-        <button
-          style={{...styles.audioButton, opacity: isPlaying ? 0.7 : 1}}
-          onClick={playAudio}
-          disabled={isPlaying}
-        >
-          {isPlaying ? "🔊 Speaking..." : "🔊 聽發音"}
-        </button>
-      </div>
-
-      <div style={styles.controls}>
-        <button style={styles.navButton} onClick={prev} disabled={idx === 0}>
-          👈 上一個
-        </button>
-        <div style={styles.progress}>
-          {idx + 1} / {items.length}
+      <div style={styles.flashCardOuter}>
+        <div style={styles.flashCardInner}>
+          <div style={styles.emojiLarge}>{current.emoji}</div>
+          <div style={styles.wordEnglish}>{current.english}</div>
+          <div style={styles.wordChinese}>{current.chinese}</div>
+          
+          <button
+            style={{...styles.audioFab, transform: isPlaying ? 'scale(1.1)' : 'scale(1)'}}
+            onClick={playAudio}
+            disabled={isPlaying}
+          >
+            {isPlaying ? "🔊" : "🔈"}
+          </button>
         </div>
-        <button
-          style={styles.navButton}
-          onClick={next}
-          disabled={idx === items.length - 1}
-        >
-          下一個 👉
-        </button>
+      </div>
+
+      <div style={styles.pagination}>
+        <button style={styles.pageBtn} onClick={prev} disabled={idx === 0}>←</button>
+        <span style={styles.pageIndicator}>{idx + 1} / {items.length}</span>
+        <button style={styles.pageBtn} onClick={next} disabled={idx === items.length - 1}>→</button>
       </div>
     </div>
   );
@@ -401,16 +466,12 @@ const QuizMode = ({
   const current = items[idx];
 
   const handleAnswer = (option: string) => {
-    if (selected) return; // Prevent double click
+    if (selected) return;
     setSelected(option);
-    
-    // Play sound of the word they clicked (optional, but good feedback if correct)
-    // Here we just play success/fail logic
     
     if (option === current.english) {
       setIsCorrect(true);
       setScore(s => s + 1);
-      // Play ding sound logic could go here
     } else {
       setIsCorrect(false);
     }
@@ -427,49 +488,58 @@ const QuizMode = ({
   };
 
   if (finished) {
+    const isPerfect = score === items.length;
     return (
-      <div style={styles.resultContainer}>
-        <div style={styles.emojiDisplay}>🏆</div>
-        <h2>測驗完成! (Finished!)</h2>
-        <p style={styles.scoreText}>
-          得分: {score} / {items.length}
-        </p>
-        <button style={styles.bigButton} onClick={onFinish}>
-          再玩一次 (Play Again)
+      <div style={styles.centerContent}>
+        <Mascot mood={isPerfect ? "excited" : "happy"} size={150} />
+        <h2 style={styles.finishTitle}>{isPerfect ? "太棒了！滿分！" : "測驗完成！"}</h2>
+        <div style={styles.scoreBoard}>
+          <span style={{fontSize: '40px'}}>🏆</span>
+          <span style={styles.scoreNum}>{score} / {items.length}</span>
+        </div>
+        <button style={styles.startButton} onClick={onFinish}>
+          再來一次 (Play Again)
         </button>
       </div>
     );
   }
 
   return (
-    <div style={styles.learnContainer}>
-      <div style={styles.modeToggle}>
-        <button style={styles.inactiveModeBtn} onClick={onSwitchToLearn}>
-          📖 學習 (Learn)
-        </button>
-        <button style={styles.activeModeBtn}>🎮 測驗 (Quiz)</button>
+    <div style={styles.modeContainer}>
+       <div style={styles.tabContainer}>
+        <button style={styles.inactiveTab} onClick={onSwitchToLearn}>📖 學習 (Learn)</button>
+        <button style={styles.activeTab}>🎮 測驗 (Quiz)</button>
       </div>
 
-      <div style={styles.progressHeader}>
-        題號: {idx + 1} / {items.length} | 分數: {score}
+      <div style={styles.quizHeader}>
+        <Mascot mood={isCorrect === true ? "excited" : isCorrect === false ? "sad" : "happy"} size={80} />
+        <div style={styles.quizBubble}>
+          {isCorrect === true ? "答對了！好棒！" : isCorrect === false ? `哎呀，是 ${current.english}` : "這個英文是什麼？"}
+        </div>
       </div>
 
-      <div style={styles.quizCard}>
+      <div style={styles.quizMain}>
         <div style={styles.quizEmoji}>{current.emoji}</div>
-        <div style={styles.questionText}>這個英文是什麼？</div>
         
-        <div style={styles.optionsGrid}>
+        <div style={styles.optionsList}>
           {current.options.map((opt) => {
-            let bgColor = "#FFF";
-            if (selected) {
-              if (opt === current.english) bgColor = "#A5D6A7"; // Green for correct
-              else if (opt === selected) bgColor = "#EF9A9A"; // Red for wrong selected
-            }
+            let bg = "#FFFFFF";
+            let border = "2px solid #EEE";
             
+            if (selected) {
+               if (opt === current.english) {
+                 bg = "#B5EAD7"; // Mint Green for correct
+                 border = "2px solid #84DCC6";
+               } else if (opt === selected) {
+                 bg = "#FFB7B2"; // Red for wrong
+                 border = "2px solid #FF9AA2";
+               }
+            }
+
             return (
               <button
                 key={opt}
-                style={{ ...styles.optionButton, backgroundColor: bgColor }}
+                style={{ ...styles.optionBtn, backgroundColor: bg, border: border }}
                 onClick={() => handleAnswer(opt)}
                 disabled={!!selected}
               >
@@ -478,15 +548,15 @@ const QuizMode = ({
             );
           })}
         </div>
-        
-        {isCorrect === true && <div style={styles.feedbackCorrect}>✅ Correct!</div>}
-        {isCorrect === false && <div style={styles.feedbackWrong}>❌ The answer is {current.english}</div>}
       </div>
+       <div style={styles.progressSimple}>
+          Question: {idx + 1} / {items.length}
+       </div>
     </div>
   );
 };
 
-// --- Styles ---
+// --- Styles (CSS-in-JS) ---
 
 const styles: Record<string, React.CSSProperties> = {
   container: {
@@ -496,260 +566,362 @@ const styles: Record<string, React.CSSProperties> = {
     display: "flex",
     flexDirection: "column",
     backgroundColor: THEMES.bg,
+    position: "relative",
+    overflow: "hidden", // for clouds
   },
-  header: {
-    padding: "20px",
-    backgroundColor: "#fff",
-    boxShadow: "0 2px 10px rgba(0,0,0,0.05)",
+  // Decoration
+  backgroundDecor: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    width: '100%',
+    height: '100%',
+    zIndex: 0,
+    pointerEvents: 'none',
+  },
+  cloud: {
+    position: 'absolute',
+    backgroundColor: '#FFF',
+    borderRadius: '50px',
+    boxShadow: '0 5px 15px rgba(0,0,0,0.03)',
+    opacity: 0.8,
+  },
+  // Nav
+  nav: {
     display: "flex",
     justifyContent: "space-between",
     alignItems: "center",
-    borderRadius: "0 0 20px 20px",
+    padding: "20px 25px",
+    position: "relative",
+    zIndex: 10,
   },
-  logo: {
-    fontSize: "24px",
+  navBrand: {
+    fontSize: "20px",
     fontWeight: "bold",
     color: THEMES.text,
+    display: "flex",
+    alignItems: "center",
+    gap: "5px",
     cursor: "pointer",
   },
-  homeButton: {
+  navHomeBtn: {
+    backgroundColor: "#FFFFFF",
+    color: THEMES.text,
     padding: "8px 16px",
     borderRadius: "20px",
-    backgroundColor: "#E0F7FA",
-    color: "#006064",
-    fontSize: "14px",
     fontWeight: "bold",
+    boxShadow: "0 2px 5px rgba(0,0,0,0.05)",
   },
   main: {
     flex: 1,
     padding: "20px",
     display: "flex",
     flexDirection: "column",
+    position: "relative",
+    zIndex: 5,
   },
-  title: {
-    textAlign: "center",
+  // Home
+  homeContainer: {
+    display: "flex",
+    flexDirection: "column",
+    alignItems: "center",
+  },
+  mascotHeader: {
+    display: "flex",
+    alignItems: "flex-end",
+    marginBottom: "30px",
+  },
+  bubble: {
+    backgroundColor: "#FFFFFF",
+    padding: "15px 20px",
+    borderRadius: "20px 20px 20px 0",
+    boxShadow: "0 4px 10px rgba(0,0,0,0.05)",
+    marginLeft: "10px",
+    marginBottom: "40px",
+    fontSize: "16px",
     color: THEMES.text,
-    marginBottom: "20px",
-    fontSize: "20px",
+    position: "relative",
   },
-  grid: {
+  categoryGrid: {
     display: "grid",
     gridTemplateColumns: "1fr 1fr",
     gap: "15px",
+    width: "100%",
   },
   categoryCard: {
-    padding: "30px 10px",
-    borderRadius: "20px",
-    color: "#fff",
-    fontSize: "18px",
-    fontWeight: "bold",
-    boxShadow: "0 4px 0 rgba(0,0,0,0.1)",
+    padding: "20px",
+    borderRadius: "25px",
     display: "flex",
-    justifyContent: "center",
+    flexDirection: "column",
     alignItems: "center",
-    textAlign: "center",
+    justifyContent: "center",
+    boxShadow: "0 4px 0 rgba(0,0,0,0.1)",
+    transition: "transform 0.2s",
+    border: "2px solid rgba(255,255,255,0.3)",
+  },
+  catIcon: {
+    fontSize: "36px",
+    marginBottom: "5px",
+    textShadow: "0 2px 4px rgba(0,0,0,0.1)",
   },
   catLabel: {
-    textShadow: "1px 1px 2px rgba(0,0,0,0.2)",
+    fontSize: "18px",
+    fontWeight: "bold",
+    color: "#FFF",
+    textShadow: "0 1px 2px rgba(0,0,0,0.1)",
   },
+  catSub: {
+    fontSize: "12px",
+    color: "rgba(255,255,255,0.9)",
+    fontWeight: "600",
+  },
+  // Login
   centerContent: {
     flex: 1,
     display: "flex",
     flexDirection: "column",
     justifyContent: "center",
     alignItems: "center",
+    padding: "20px",
+    position: "relative",
+    zIndex: 5,
   },
-  spinner: {
-    fontSize: "60px",
-    animation: "spin 2s infinite linear",
-  },
-  loadingText: {
-    marginTop: "20px",
-    fontSize: "18px",
-    color: "#666",
-  },
-  learnContainer: {
-    display: "flex",
-    flexDirection: "column",
-    alignItems: "center",
-    gap: "20px",
-  },
-  modeToggle: {
-    display: "flex",
-    gap: "10px",
-    marginBottom: "10px",
-    backgroundColor: "#fff",
-    padding: "5px",
-    borderRadius: "30px",
-    boxShadow: "0 2px 5px rgba(0,0,0,0.05)",
-  },
-  activeModeBtn: {
-    padding: "10px 20px",
-    borderRadius: "25px",
-    backgroundColor: THEMES.secondary,
-    color: "#fff",
-    fontWeight: "bold",
-  },
-  inactiveModeBtn: {
-    padding: "10px 20px",
-    borderRadius: "25px",
-    backgroundColor: "transparent",
-    color: "#666",
-    fontWeight: "bold",
-  },
-  flashCard: {
-    backgroundColor: "#fff",
-    borderRadius: "30px",
-    padding: "40px",
+  loginCard: {
+    backgroundColor: "rgba(255,255,255,0.9)",
+    backdropFilter: "blur(10px)",
+    padding: "40px 30px",
+    borderRadius: "40px",
     width: "100%",
-    maxWidth: "350px",
+    maxWidth: "340px",
     display: "flex",
     flexDirection: "column",
     alignItems: "center",
-    boxShadow: "0 10px 25px rgba(0,0,0,0.1)",
-    border: "3px solid #E0F2F1",
+    boxShadow: "0 10px 30px rgba(181, 234, 215, 0.3)", // Mint shadow
+    border: "2px solid #FFF",
   },
-  emojiDisplay: {
-    fontSize: "100px",
-    marginBottom: "20px",
-  },
-  wordDisplay: {
-    fontSize: "40px",
-    fontWeight: "bold",
-    color: "#333",
+  logoText: {
+    fontFamily: "'Fredoka', sans-serif",
+    color: THEMES.primary,
+    fontSize: "32px",
+    marginTop: "10px",
     marginBottom: "10px",
-    textAlign: "center",
   },
-  chineseDisplay: {
-    fontSize: "24px",
+  loginSubText: {
+    textAlign: "center",
     color: "#888",
-    marginBottom: "30px",
-  },
-  audioButton: {
-    backgroundColor: THEMES.primary,
-    color: "#5D4037",
-    padding: "12px 30px",
-    borderRadius: "50px",
-    fontSize: "18px",
-    fontWeight: "bold",
-    boxShadow: "0 4px 0 #FBC02D",
-    display: "flex",
-    alignItems: "center",
-    gap: "8px",
-  },
-  controls: {
-    display: "flex",
-    alignItems: "center",
-    gap: "20px",
-    marginTop: "20px",
-  },
-  navButton: {
-    backgroundColor: "#fff",
-    border: "2px solid #ddd",
-    padding: "10px 20px",
-    borderRadius: "15px",
-    fontWeight: "bold",
-    color: "#555",
-  },
-  progress: {
-    fontSize: "18px",
-    fontWeight: "bold",
-    color: "#555",
-  },
-  quizCard: {
-    backgroundColor: "#fff",
-    borderRadius: "30px",
-    padding: "20px",
-    width: "100%",
-    maxWidth: "400px",
-    display: "flex",
-    flexDirection: "column",
-    alignItems: "center",
-    boxShadow: "0 5px 15px rgba(0,0,0,0.05)",
-  },
-  quizEmoji: {
-    fontSize: "80px",
-    marginBottom: "10px",
-  },
-  questionText: {
-    fontSize: "18px",
-    color: "#666",
-    marginBottom: "20px",
-  },
-  optionsGrid: {
-    display: "grid",
-    gridTemplateColumns: "1fr 1fr",
-    gap: "10px",
-    width: "100%",
-  },
-  optionButton: {
-    padding: "20px",
-    borderRadius: "15px",
-    border: "2px solid #eee",
-    fontSize: "20px",
-    fontWeight: "bold",
-    color: "#444",
-    boxShadow: "0 3px 0 #eee",
-  },
-  progressHeader: {
-    fontSize: "16px",
-    color: "#666",
-    fontWeight: "bold",
-  },
-  feedbackCorrect: {
-    marginTop: "20px",
-    color: "#4CAF50",
-    fontWeight: "bold",
-    fontSize: "20px",
-  },
-  feedbackWrong: {
-    marginTop: "20px",
-    color: "#EF5350",
-    fontWeight: "bold",
-    fontSize: "20px",
-  },
-  resultContainer: {
-    flex: 1,
-    display: "flex",
-    flexDirection: "column",
-    alignItems: "center",
-    justifyContent: "center",
-    backgroundColor: "#fff",
-    margin: "20px",
-    borderRadius: "30px",
-    padding: "40px",
-    boxShadow: "0 10px 30px rgba(0,0,0,0.1)",
-  },
-  scoreText: {
-    fontSize: "24px",
-    color: "#555",
-    marginBottom: "30px",
-  },
-  bigButton: {
-    backgroundColor: THEMES.accent,
-    color: "#fff",
-    padding: "15px 40px",
-    borderRadius: "50px",
-    fontSize: "20px",
-    fontWeight: "bold",
-    boxShadow: "0 5px 0 #C2185B",
-    marginTop: "20px",
-  },
-  error: {
-    marginTop: "20px",
-    color: "red",
-    textAlign: "center",
+    lineHeight: "1.5",
+    marginBottom: "25px",
+    fontSize: "14px",
   },
   input: {
     width: "100%",
     padding: "15px",
-    borderRadius: "15px",
-    border: "2px solid #ddd",
-    fontSize: "16px",
-    outline: "none",
+    borderRadius: "25px",
+    border: "2px solid #EEE",
     textAlign: "center",
+    fontSize: "16px",
+    marginBottom: "15px",
+    outline: "none",
     backgroundColor: "#FAFAFA",
+    color: "#555",
   },
+  startButton: {
+    width: "100%",
+    backgroundColor: THEMES.primary,
+    color: "#FFF",
+    padding: "15px",
+    borderRadius: "25px",
+    fontSize: "18px",
+    fontWeight: "bold",
+    boxShadow: "0 4px 0 #E57373", // Darker pink shadow
+  },
+  linkText: {
+    marginTop: "15px",
+    color: "#AAA",
+    fontSize: "12px",
+    textDecoration: "none",
+  },
+  loadingText: {
+    marginTop: "20px",
+    color: "#888",
+    textAlign: "center",
+    lineHeight: "1.6",
+  },
+  // Learn Mode
+  modeContainer: {
+    display: "flex",
+    flexDirection: "column",
+    alignItems: "center",
+    width: "100%",
+    maxWidth: "400px",
+    margin: "0 auto",
+  },
+  tabContainer: {
+    display: "flex",
+    backgroundColor: "#EEE",
+    padding: "4px",
+    borderRadius: "30px",
+    marginBottom: "20px",
+  },
+  activeTab: {
+    padding: "10px 24px",
+    borderRadius: "25px",
+    backgroundColor: "#FFF",
+    color: THEMES.text,
+    fontWeight: "bold",
+    boxShadow: "0 2px 8px rgba(0,0,0,0.1)",
+  },
+  inactiveTab: {
+    padding: "10px 24px",
+    borderRadius: "25px",
+    backgroundColor: "transparent",
+    color: "#999",
+    fontWeight: "bold",
+  },
+  flashCardOuter: {
+    width: "100%",
+    perspective: "1000px",
+    marginBottom: "20px",
+  },
+  flashCardInner: {
+    backgroundColor: "#FFF",
+    borderRadius: "40px",
+    padding: "40px 20px",
+    display: "flex",
+    flexDirection: "column",
+    alignItems: "center",
+    boxShadow: "0 15px 35px rgba(0,0,0,0.05)",
+    border: "4px solid #FFF",
+    position: "relative",
+  },
+  emojiLarge: {
+    fontSize: "100px",
+    marginBottom: "20px",
+    filter: "drop-shadow(0 5px 5px rgba(0,0,0,0.1))",
+  },
+  wordEnglish: {
+    fontSize: "36px",
+    fontWeight: "bold",
+    color: THEMES.text,
+    fontFamily: "'Fredoka', sans-serif",
+  },
+  wordChinese: {
+    fontSize: "20px",
+    color: "#AAA",
+    marginTop: "5px",
+    marginBottom: "20px",
+  },
+  audioFab: {
+    width: "60px",
+    height: "60px",
+    borderRadius: "30px",
+    backgroundColor: THEMES.secondary,
+    color: "#FFF",
+    fontSize: "24px",
+    boxShadow: "0 4px 0 #88C9B3",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    transition: "all 0.2s",
+  },
+  pagination: {
+    display: "flex",
+    alignItems: "center",
+    gap: "20px",
+  },
+  pageBtn: {
+    width: "50px",
+    height: "50px",
+    borderRadius: "25px",
+    backgroundColor: "#FFF",
+    border: "2px solid #EEE",
+    fontSize: "20px",
+    color: THEMES.text,
+  },
+  pageIndicator: {
+    fontSize: "18px",
+    fontWeight: "bold",
+    color: "#888",
+  },
+  // Quiz
+  quizHeader: {
+    display: "flex",
+    alignItems: "center",
+    width: "100%",
+    marginBottom: "15px",
+  },
+  quizBubble: {
+    backgroundColor: "#FFF",
+    padding: "15px",
+    borderRadius: "20px 20px 20px 0",
+    marginLeft: "10px",
+    flex: 1,
+    boxShadow: "0 2px 10px rgba(0,0,0,0.05)",
+    color: THEMES.text,
+    fontSize: "16px",
+  },
+  quizMain: {
+    width: "100%",
+    backgroundColor: "#FFF",
+    borderRadius: "30px",
+    padding: "30px 20px",
+    display: "flex",
+    flexDirection: "column",
+    alignItems: "center",
+    boxShadow: "0 5px 20px rgba(0,0,0,0.05)",
+  },
+  quizEmoji: {
+    fontSize: "80px",
+    marginBottom: "20px",
+  },
+  optionsList: {
+    width: "100%",
+    display: "grid",
+    gridTemplateColumns: "1fr 1fr",
+    gap: "12px",
+  },
+  optionBtn: {
+    padding: "15px",
+    borderRadius: "20px",
+    fontSize: "18px",
+    fontWeight: "bold",
+    color: "#666",
+    transition: "all 0.2s",
+  },
+  progressSimple: {
+    marginTop: "20px",
+    color: "#AAA",
+    fontSize: "14px",
+    fontWeight: "600",
+  },
+  finishTitle: {
+    fontSize: "28px",
+    color: THEMES.text,
+    margin: "20px 0",
+  },
+  scoreBoard: {
+    backgroundColor: "#FFF",
+    padding: "20px 40px",
+    borderRadius: "30px",
+    display: "flex",
+    alignItems: "center",
+    gap: "15px",
+    boxShadow: "0 5px 15px rgba(0,0,0,0.05)",
+    marginBottom: "30px",
+  },
+  scoreNum: {
+    fontSize: "32px",
+    fontWeight: "bold",
+    color: THEMES.primary,
+  },
+  error: {
+    padding: "15px",
+    backgroundColor: "#FFEBEE",
+    color: "#D32F2F",
+    borderRadius: "15px",
+    marginTop: "20px",
+    textAlign: "center",
+  }
 };
 
 const root = createRoot(document.getElementById("root")!);
