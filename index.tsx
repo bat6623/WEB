@@ -251,11 +251,11 @@ const App = () => {
       let shouldLogout = false;
 
       if (detail.includes("400")) {
-        friendlyMsg = "API Key 無效 (400) - 請檢查 Key 是否正確。";
+        friendlyMsg = "API Key 無效 (400) - 請檢查您的 Key 是否正確複製。";
         shouldLogout = true;
       }
       else if (detail.includes("403")) {
-        friendlyMsg = "API 權限不足 (403) - 請確認 Google Cloud 專案已啟用 API。";
+        friendlyMsg = "API 權限不足 (403)。這通常代表 Key 無效或專案未啟用 Generative AI API。建議建立新的 Key 再試一次。";
         shouldLogout = true;
       }
       else if (detail.includes("429")) friendlyMsg = "請求太頻繁 (429) - 請休息一下再試。";
