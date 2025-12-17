@@ -21,6 +21,8 @@ const THEMES = {
   cardBg: "#FFFFFF",
   highlight: "#C7CEEA", // Periwinkle
   wrong: "#FFB7B2", // Soft Red
+  errorBg: "#FFEBEE",
+  errorText: "#D32F2F",
 };
 
 // Define types
@@ -28,11 +30,11 @@ interface VocabWord {
   english: string;
   chinese: string;
   emoji: string;
-  generatedImage?: string; // New field for AI generated image
+  generatedImage?: string;
 }
 
 interface QuizItem extends VocabWord {
-  options: string[]; // 3 wrong answers + 1 correct answer (shuffled)
+  options: string[];
 }
 
 // --- Audio Helper ---
@@ -65,7 +67,7 @@ const decodeAudioData = async (
 
 // --- Custom Components & Icons ---
 
-const Mascot = ({ mood = "happy", size = 100 }: { mood?: "happy" | "thinking" | "excited" | "sad"; size?: number }) => {
+const Mascot = ({ mood = "happy", size = 100 }: { mood?: "happy" | "thinking" | "excited" | "sad" | "error"; size?: number }) => {
   const eyeColor = "#5D5C61";
   const blushColor = "#FFB7B2";
 
@@ -114,6 +116,16 @@ const Mascot = ({ mood = "happy", size = 100 }: { mood?: "happy" | "thinking" | 
           <path d="M150 60 Q 140 80, 150 85" fill="none" stroke="#87CEEB" strokeWidth="3" />
         </>
       )}
+
+      {mood === "error" && (
+        <>
+          <line x1="60" y1="85" x2="80" y2="105" stroke={eyeColor} strokeWidth="4" />
+          <line x1="80" y1="85" x2="60" y2="105" stroke={eyeColor} strokeWidth="4" />
+          <line x1="120" y1="85" x2="140" y2="105" stroke={eyeColor} strokeWidth="4" />
+          <line x1="140" y1="85" x2="120" y2="105" stroke={eyeColor} strokeWidth="4" />
+          <path d="M90 125 Q 100 115, 110 125" fill="none" stroke={eyeColor} strokeWidth="4" />
+        </>
+      )}
     </svg>
   );
 };
@@ -129,7 +141,9 @@ const CloudDecoration = () => (
 // --- App Components ---
 
 const App = () => {
-  const [apiKey, setApiKey] = useState(process.env.API_KEY || "");
+  // Safe access to process.env for browser environment
+  const envKey = (window as any).process?.env?.API_KEY || "";
+  const [apiKey, setApiKey] = useState(envKey);
   const [inputKey, setInputKey] = useState("");
   
   const [screen, setScreen] = useState<"home" | "loading" | "learn" | "quiz">("home");
@@ -137,6 +151,7 @@ const App = () => {
   const [vocabList, setVocabList] = useState<VocabWord[]>([]);
   const [quizItems, setQuizItems] = useState<QuizItem[]>([]);
   const [error, setError] = useState("");
+  const [errorDetail, setErrorDetail] = useState("");
 
   const ai = useRef<GoogleGenAI | null>(null);
 
@@ -156,20 +171,24 @@ const App = () => {
   ];
 
   const fetchVocabulary = async (selectedCategory: string) => {
-    if (!ai.current) return;
+    if (!ai.current) {
+      setError("API Key 尚未設定");
+      return;
+    }
+    
     setScreen("loading");
     setCategory(selectedCategory);
     setError("");
+    setErrorDetail("");
 
     try {
       const prompt = `
-        Generate a list of 8 distinct, simple English nouns related to '${selectedCategory}'.
+        Generate a list of 6 distinct, simple English nouns related to '${selectedCategory}'.
         Target audience: Kids.
-        Return JSON format.
-        Make sure the words are common and easy to visualize.
+        The output must be a valid JSON object.
+        Make sure the words are common concrete nouns easy to visualize.
       `;
 
-      // Use a wrapped object schema for better stability
       const response = await ai.current.models.generateContent({
         model: "gemini-2.5-flash",
         contents: prompt,
@@ -189,35 +208,56 @@ const App = () => {
                     emoji: { type: Type.STRING },
                   },
                   required: ["english", "chinese", "emoji"],
+                  propertyOrdering: ["english", "chinese", "emoji"]
                 },
               }
-            }
+            },
+            propertyOrdering: ["items"]
           },
         },
       });
 
-      const text = response.text;
-      if (text) {
-        // Parse the wrapped object
-        const parsed = JSON.parse(text);
-        const data: VocabWord[] = parsed.items || parsed; // fallback if needed
-
-        setVocabList(data);
-        
-        const qItems = data.map((item) => {
-          const others = data.filter((w) => w.english !== item.english);
-          const distractors = others.sort(() => 0.5 - Math.random()).slice(0, 3).map(w => w.english);
-          const options = [...distractors, item.english].sort(() => 0.5 - Math.random());
-          return { ...item, options };
-        });
-        setQuizItems(qItems);
-        setScreen("learn");
-      } else {
-        throw new Error("No data returned from AI");
+      let text = response.text;
+      if (!text) {
+        throw new Error("模型未回傳任何文字，可能被安全性設定阻擋。");
       }
-    } catch (e) {
-      console.error(e);
-      setError("讀取單字失敗了，請檢查 Key 或網路連線～");
+
+      // Robust Cleaning: Remove Markdown code blocks if present
+      text = text.replace(/```json/g, "").replace(/```/g, "").trim();
+
+      let data: VocabWord[] = [];
+      try {
+        const parsed = JSON.parse(text);
+        data = parsed.items || parsed;
+        if (!Array.isArray(data)) throw new Error("資料格式不正確 (Not an array)");
+      } catch (jsonErr) {
+        console.error("JSON Parse Error:", jsonErr, "Raw Text:", text);
+        throw new Error("無法解析 AI 回傳的資料，請重試。");
+      }
+
+      setVocabList(data);
+      
+      const qItems = data.map((item) => {
+        const others = data.filter((w) => w.english !== item.english);
+        const distractors = others.sort(() => 0.5 - Math.random()).slice(0, 3).map(w => w.english);
+        const options = [...distractors, item.english].sort(() => 0.5 - Math.random());
+        return { ...item, options };
+      });
+      setQuizItems(qItems);
+      setScreen("learn");
+
+    } catch (e: any) {
+      console.error("Fetch Error:", e);
+      let friendlyMsg = "讀取失敗，請稍後再試。";
+      let detail = e.message || String(e);
+
+      if (detail.includes("400")) friendlyMsg = "API Key 無效 (400) - 請檢查 Key 是否正確。";
+      else if (detail.includes("403")) friendlyMsg = "API 權限不足 (403) - 請確認 Google Cloud 專案已啟用 API。";
+      else if (detail.includes("429")) friendlyMsg = "請求太頻繁 (429) - 請休息一下再試。";
+      else if (detail.includes("503") || detail.includes("500")) friendlyMsg = "AI 伺服器忙碌中，請重試。";
+      
+      setError(friendlyMsg);
+      setErrorDetail(detail);
       setScreen("home");
     }
   };
@@ -231,6 +271,8 @@ const App = () => {
   const handleHome = () => {
     setScreen("home");
     setVocabList([]);
+    setError("");
+    setErrorDetail("");
   };
 
   if (!apiKey) {
@@ -289,6 +331,22 @@ const App = () => {
       </nav>
 
       <main style={styles.main}>
+        {/* Error Notification Area */}
+        {error && (
+          <div style={styles.errorBox}>
+            <div style={{display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '5px'}}>
+              <Mascot mood="error" size={40} />
+              <span style={{fontWeight: 'bold', fontSize: '16px'}}>{error}</span>
+            </div>
+            {errorDetail && (
+              <details style={{fontSize: '12px', color: '#B71C1C', marginTop: '5px', cursor: 'pointer'}}>
+                <summary>查看詳細錯誤 (Error Details)</summary>
+                <pre style={{whiteSpace: 'pre-wrap', marginTop: '5px', backgroundColor: 'rgba(255,255,255,0.5)', padding: '5px', borderRadius: '5px'}}>{errorDetail}</pre>
+              </details>
+            )}
+          </div>
+        )}
+
         {screen === "home" && (
           <CategorySelect categories={categories} onSelect={fetchVocabulary} />
         )}
@@ -312,8 +370,6 @@ const App = () => {
             onFinish={handleHome}
           />
         )}
-        
-        {error && <div style={styles.error}>{error}</div>}
       </main>
     </div>
   );
@@ -378,8 +434,14 @@ const LearnMode = ({
   const [idx, setIdx] = useState(0);
   const [isPlaying, setIsPlaying] = useState(false);
   const [isGeneratingImg, setIsGeneratingImg] = useState(false);
+  const isMounted = useRef(true);
 
   const current = items[idx];
+
+  useEffect(() => {
+    isMounted.current = true;
+    return () => { isMounted.current = false; };
+  }, []);
 
   // Play Audio
   const playAudio = async () => {
@@ -397,6 +459,8 @@ const LearnMode = ({
         },
       });
 
+      if (!isMounted.current) return;
+
       const base64Audio = response.candidates?.[0]?.content?.parts?.[0]?.inlineData?.data;
       if (base64Audio) {
         const audioCtx = new (window.AudioContext || (window as any).webkitAudioContext)();
@@ -405,13 +469,13 @@ const LearnMode = ({
         source.buffer = buffer;
         source.connect(audioCtx.destination);
         source.start(0);
-        source.onended = () => setIsPlaying(false);
+        source.onended = () => { if(isMounted.current) setIsPlaying(false); };
       } else {
         setIsPlaying(false);
       }
     } catch (e) {
       console.error("TTS Error", e);
-      setIsPlaying(false);
+      if(isMounted.current) setIsPlaying(false);
     }
   };
 
@@ -420,7 +484,6 @@ const LearnMode = ({
     if (!ai || current.generatedImage || isGeneratingImg) return;
     setIsGeneratingImg(true);
     try {
-      // Use gemini-2.5-flash-image for image generation
       const response = await ai.models.generateContent({
         model: 'gemini-2.5-flash-image',
         contents: {
@@ -431,6 +494,8 @@ const LearnMode = ({
           ],
         },
       });
+
+      if (!isMounted.current) return;
 
       let base64Img = null;
       for (const part of response.candidates?.[0]?.content?.parts || []) {
@@ -446,7 +511,7 @@ const LearnMode = ({
     } catch (e) {
       console.error("Image Gen Error", e);
     } finally {
-      setIsGeneratingImg(false);
+      if(isMounted.current) setIsGeneratingImg(false);
     }
   };
 
@@ -454,7 +519,7 @@ const LearnMode = ({
   useEffect(() => {
     // 1. Play audio after a short delay
     const audioTimer = setTimeout(() => {
-        playAudio();
+       if(isMounted.current) playAudio();
     }, 500);
 
     // 2. Generate image if not exists
@@ -463,7 +528,7 @@ const LearnMode = ({
     }
 
     return () => clearTimeout(audioTimer);
-  }, [current.english]); // Dependency on english word ensures effect runs on change
+  }, [current.english]);
 
   const next = () => { if (idx < items.length - 1) setIdx(idx + 1); };
   const prev = () => { if (idx > 0) setIdx(idx - 1); };
@@ -691,6 +756,16 @@ const styles: Record<string, React.CSSProperties> = {
     flexDirection: "column",
     position: "relative",
     zIndex: 5,
+  },
+  // Error Box
+  errorBox: {
+    backgroundColor: THEMES.errorBg,
+    color: THEMES.errorText,
+    padding: "15px",
+    borderRadius: "20px",
+    marginBottom: "20px",
+    boxShadow: "0 4px 10px rgba(211, 47, 47, 0.1)",
+    border: "2px solid #FFCDD2",
   },
   // Home
   homeContainer: {
