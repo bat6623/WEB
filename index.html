@@ -36,47 +36,132 @@
         background: #88d4ff;
         border-radius: 5px;
       }
-    </style>
-    <!-- Import Map for React and GenAI SDK -->
-    <script type="importmap">
-    {
-      "imports": {
-        "react-dom/": "https://esm.sh/react-dom@^19.2.3/",
-        "@google/genai": "https://esm.sh/@google/genai@^1.33.0",
-        "react": "https://esm.sh/react@^19.2.3",
-        "react/": "https://esm.sh/react@^19.2.3/"
+      /* 動畫定義 */
+      @keyframes fadeInScale {
+        from {
+          opacity: 0;
+          transform: scale(0.9);
+        }
+        to {
+          opacity: 1;
+          transform: scale(1);
+        }
       }
-    }
-    </script>
+      @keyframes fadeIn {
+        from {
+          opacity: 0;
+        }
+        to {
+          opacity: 1;
+        }
+      }
+      @keyframes bounceIn {
+        0% {
+          opacity: 0;
+          transform: scale(0.3) translateY(-20px);
+        }
+        50% {
+          opacity: 1;
+          transform: scale(1.1) translateY(0);
+        }
+        70% {
+          transform: scale(0.95);
+        }
+        100% {
+          transform: scale(1);
+        }
+      }
+      @keyframes slideUp {
+        from {
+          opacity: 0;
+          transform: translateY(20px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+      @keyframes pulse {
+        0%, 100% {
+          opacity: 1;
+          transform: scale(1);
+        }
+        50% {
+          opacity: 0.7;
+          transform: scale(1.2);
+        }
+      }
+      @keyframes correctPulse {
+        0% {
+          transform: scale(1);
+        }
+        50% {
+          transform: scale(1.1);
+        }
+        100% {
+          transform: scale(1.05);
+        }
+      }
+      @keyframes shake {
+        0%, 100% {
+          transform: translateX(0);
+        }
+        10%, 30%, 50%, 70%, 90% {
+          transform: translateX(-5px);
+        }
+        20%, 40%, 60%, 80% {
+          transform: translateX(5px);
+        }
+      }
+      @keyframes float {
+        0%, 100% {
+          transform: translateY(0);
+        }
+        50% {
+          transform: translateY(-10px);
+        }
+      }
+      /* 雲朵動畫 */
+      @keyframes cloudFloat {
+        0%, 100% {
+          transform: translateX(0) translateY(0);
+        }
+        50% {
+          transform: translateX(20px) translateY(-10px);
+        }
+      }
+      .cloud {
+        animation: cloudFloat 6s ease-in-out infinite;
+      }
+    </style>
     <!-- Polyfill for process.env (Required for browser-only environment) -->
+    <!-- Note: Vite will handle module imports, so importmap is not needed -->
     <script>
       // ------------------------------------------------------------------
       // 設定 API Key 的位置 / Set your API Key here
-      // 為了避免 403 錯誤，請保持為空字串，除非您有自己有效的 Key
-      const HARDCODED_API_KEY = "AIzaSyAjakYb3aUajGrO5ikloXGtGwEdm6MehbE"; 
+      const HARDCODED_API_KEY = "AIzaSyDtCVcsblEY2y5PhCsGRkUeVuPApbmjYFA"; 
       // ------------------------------------------------------------------
 
-      window.process = {
-        env: {
-          NODE_ENV: 'development',
-          // 優先順序：程式碼寫死 > 網址參數 > 空字串 (等待使用者輸入)
-          API_KEY: HARDCODED_API_KEY || new URLSearchParams(window.location.search).get("key") || "" 
-        }
-      };
+      // 確保在 React 載入前就設置好 process.env
+      window.process = window.process || {};
+      window.process.env = window.process.env || {};
+      window.process.env.NODE_ENV = 'development';
+      // 優先順序：程式碼寫死 > 網址參數 > 空字串 (等待使用者輸入)
+      window.process.env.API_KEY = HARDCODED_API_KEY || new URLSearchParams(window.location.search).get("key") || "";
+      
+      // 調試：確認 API Key 已設置
+      console.log("HTML 中設置的 API Key:", window.process.env.API_KEY ? `已設置 (長度: ${window.process.env.API_KEY.length})` : "未設置");
     </script>
-    <!-- Babel Standalone to compile TSX in the browser -->
-    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-  <link rel="stylesheet" href="/index.css">
-</head>
+  </head>
   <body>
-    <div id="root"></div>
-    <!-- 
-      Load index.tsx using Babel. 
-      type="text/babel" tells Babel to compile it.
-      data-type="module" preserves ES imports for the browser to handle via importmap.
-      data-presets="typescript,react" enables TS and JSX support.
-    -->
-    <script type="text/babel" data-type="module" data-presets="typescript,react" src="./index.tsx"></script>
-  <script type="module" src="/index.tsx"></script>
-</body>
+    <div id="root">
+      <div style="padding: 20px; text-align: center; color: #666; font-family: system-ui, sans-serif;">
+        <div style="font-size: 24px; margin-bottom: 10px;">⏳</div>
+        <p style="font-size: 16px; margin: 10px 0;">載入中...</p>
+        <p style="font-size: 12px; color: #999;">如果此訊息持續顯示，請按 F12 打開開發者工具查看控制台</p>
+      </div>
+    </div>
+    <!-- Vite will handle the module loading -->
+    <script type="module" src="/index.tsx"></script>
+  </body>
 </html>
