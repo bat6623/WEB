@@ -333,7 +333,10 @@ const App = () => {
     try {
       const prompt = `
         Generate a list of 6 distinct, simple English nouns related to '${selectedCategory}'.
-        Target audience: Kids.
+        Target audience: Kids (Elementary school).
+        Context: For a vocabulary flashcard app.
+        Requirement: Provide a VARIETY of words. If possible, avoid just the most common ones if there are other simple alternatives.
+        Random Seed Hint: ${Date.now()} (Use this to help randomize your selection).
         The output must be a valid JSON object.
         Make sure the words are common concrete nouns easy to visualize.
       `;
@@ -710,21 +713,29 @@ const LearnMode = ({
     // 優先使用瀏覽器的語音合成 API（更可靠）
     try {
       if ('speechSynthesis' in window) {
+        // 先取消之前的發音，避免在某些瀏覽器（如 Chrome）中掛起
+        window.speechSynthesis.cancel();
+
         const utterance = new SpeechSynthesisUtterance(current.english);
         utterance.lang = 'en-US';
-        utterance.rate = 0.8; // 稍慢一點，適合學習
-        utterance.pitch = 1.1; // 稍微高一點，更友好
+        utterance.rate = 0.8;
+        utterance.pitch = 1.1;
+
         utterance.onend = () => {
           if (isMounted.current) setIsPlaying(false);
         };
-        utterance.onerror = () => {
+        utterance.onerror = (event) => {
+          console.error("SpeechSynthesis error:", event);
           if (isMounted.current) setIsPlaying(false);
         };
+
+        // 確保發音器沒有被暫停
+        window.speechSynthesis.resume();
         window.speechSynthesis.speak(utterance);
         return;
       }
     } catch (e) {
-      console.warn("Web Speech API 不可用，嘗試使用 Gemini TTS");
+      console.warn("Web Speech API 發生錯誤，嘗試使用 Gemini TTS:", e);
     }
 
     // 備用方案：嘗試使用 Gemini API（如果支持）
@@ -932,13 +943,15 @@ const QuizMode = ({
   onSwitchToLearn: () => void;
   onFinish: () => void;
 }) => {
+  const [queue, setQueue] = useState<QuizItem[]>([...items]);
   const [idx, setIdx] = useState(0);
   const [score, setScore] = useState(0);
+  const [firstTimeDone, setFirstTimeDone] = useState<Set<string>>(new Set());
   const [selected, setSelected] = useState<string | null>(null);
   const [isCorrect, setIsCorrect] = useState<boolean | null>(null);
   const [finished, setFinished] = useState(false);
 
-  const current = items[idx];
+  const current = queue[idx];
 
   const handleAnswer = (option: string) => {
     if (selected) return;
@@ -946,13 +959,20 @@ const QuizMode = ({
 
     if (option === current.english) {
       setIsCorrect(true);
-      setScore(s => s + 1);
+      // Only increase score if this is the first time answering this specific word
+      if (!firstTimeDone.has(current.english)) {
+        setScore(s => s + 1);
+        setFirstTimeDone(prev => new Set(prev).add(current.english));
+      }
     } else {
       setIsCorrect(false);
+      // If wrong, add it to the end of the queue for repetition
+      setQueue(prev => [...prev, { ...current }]);
+      setFirstTimeDone(prev => new Set(prev).add(current.english)); // Mark as "attempted" so it doesn't count for score later
     }
 
     setTimeout(() => {
-      if (idx < items.length - 1) {
+      if (idx < queue.length - 1) {
         setIdx(idx + 1);
         setSelected(null);
         setIsCorrect(null);
@@ -1152,12 +1172,21 @@ const RoleplayMode = ({
 
   const playAudio = (text: string) => {
     if ('speechSynthesis' in window) {
+      // 先取消之前的發音
+      window.speechSynthesis.cancel();
+
       // Basic cleaning for TTS (remove parenthetical Chinese)
       const cleanText = text.replace(/\([^)]*\)/g, "");
       const utterance = new SpeechSynthesisUtterance(cleanText);
       utterance.lang = 'en-US';
       utterance.rate = 0.9;
+
+      utterance.onerror = (e) => console.error("SpeechSynthesis Error:", e);
+
+      window.speechSynthesis.resume();
       window.speechSynthesis.speak(utterance);
+    } else {
+      console.warn("此瀏覽器不支援語音合成 (SpeechSynthesis)");
     }
   };
 

@@ -1,0 +1,21 @@
+{
+    "name": "Happy English 快樂英語",
+    "short_name": "Happy English",
+    "description": "Fun and easy English learning for kids.",
+    "start_url": "/",
+    "display": "standalone",
+    "background_color": "#FFF9F0",
+    "theme_color": "#FF9AA2",
+    "icons": [
+        {
+            "src": "/pwa-192x192.png",
+            "sizes": "192x192",
+            "type": "image/png"
+        },
+        {
+            "src": "/pwa-512x512.png",
+            "sizes": "512x512",
+            "type": "image/png"
+        }
+    ]
+}
