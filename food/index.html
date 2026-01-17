@@ -7,392 +7,72 @@
     <title>沖繩美食地圖 | Okinawa Food Guide</title>
 
     <!-- Leaflet CSS -->
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
-        integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
-
-    <!-- Google Fonts: Noto Serif TC (Mincho) & Noto Sans TC (Gothic) -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link
-        href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700&family=Noto+Serif+TC:wght@400;600;700&display=swap"
-        rel="stylesheet">
-
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <!-- MarkerCluster CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.4.1/dist/MarkerCluster.css" />
+    <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.4.1/dist/MarkerCluster.Default.css" />
     <!-- Font Awesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts -->
+    <link
+        href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&family=Roboto:wght@400;500;700&display=swap"
+        rel="stylesheet">
 
     <style>
         :root {
-            /* --- Japanese Traditional Palette (Wabi-Sabi) --- */
-
-            /* Light Theme */
-            /* Background: Gofun (Rice Powder/Off-white) */
-            --bg-color: #fcfaf2;
-
-            /* Text: Sumi (Ink Black) */
-            --text-main: #2b2b2b;
-            --text-sub: #595857;
-
-            /* Container: White Washi Paper feel */
-            --container-bg: rgba(255, 255, 255, 0.95);
-
-            /* Accent: Ai (Indigo) */
-            --accent-color: #1e3b79;
-            --accent-hover: #162c5b;
-
-            /* Highlight: Shu (Vermilion) */
-            --highlight-color: #d3381c;
-
-            /* Shadow: Soft, diffused */
-            --shadow-lg: 0 4px 20px rgba(43, 43, 43, 0.08);
-
-            --btn-bg: #ffffff;
-
-            /* Header Gradient: Indigo to styling */
-            --map-overlay-bg: linear-gradient(135deg, #1e3b79 0%, #2a4b8d 100%);
-
-            /* Label Styles */
-            --label-color: #2b2b2b;
-            --label-halo: #fcfaf2;
-        }
-
-        [data-theme="dark"] {
-            /* --- Dark Theme (Yoru / Midnight) --- */
-
-            /* Background: Kachiro (Deep Black/Navy) */
-            --bg-color: #0f172a;
-
-            /* Text: Gofun (White) */
-            --text-main: #fcfaf2;
-            --text-sub: #94a3b8;
-
-            /* Container: Dark Navy */
-            --container-bg: rgba(30, 41, 59, 0.95);
-
-            /* Accent: Cyan/Blue (Lighter for contrast against dark) */
-            --accent-color: #64b5f6;
-            --accent-hover: #42a5f5;
-
-            /* Highlight: Same Vermilion, slightly brighter if needed */
-            --highlight-color: #ff6b6b;
-
-            --shadow-lg: 0 10px 25px rgba(0, 0, 0, 0.5);
-
-            --btn-bg: #1e293b;
-            --map-overlay-bg: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
-
-            /* Label Styles Dark */
-            --label-color: #fcfaf2;
-            --label-halo: #0f172a;
+            --primary-color: #007AFF;
+            /* Apple Blue */
+            --accent-color: #FCCE02;
+            /* Yellow */
+            --surface: #ffffff;
+            --text-main: #1c1c1e;
+            --text-sub: #8e8e93;
+            --danger: #FF3B30;
+            --success: #34C759;
+            --radius-card: 16px;
+            --radius-pill: 20px;
+            --shadow-card: 0 4px 16px rgba(0, 0, 0, 0.12);
+            --safe-area-top: env(safe-area-inset-top, 20px);
+            --safe-area-bottom: env(safe-area-inset-bottom, 20px);
         }
 
         * {
-            box-sizing: border-box;
             margin: 0;
             padding: 0;
+            box-sizing: border-box;
             -webkit-tap-highlight-color: transparent;
+            font-family: 'Roboto', 'Noto Sans TC', sans-serif;
         }
 
-        body {
-            /* Main Font: Sans for readability, Serif for titles */
-            font-family: 'Noto Sans TC', sans-serif;
-            color: var(--text-main);
-            overflow: hidden;
-            height: 100vh;
-            width: 100vw;
-            background-color: var(--bg-color);
-            transition: background-color 0.4s ease, color 0.4s ease;
-        }
-
-        /* Typography Helpers */
-        .font-serif {
-            font-family: 'Noto Serif TC', serif;
-        }
-
-        /* Full Screen Map */
-        #map {
+        body,
+        html {
             width: 100%;
             height: 100%;
-            z-index: 1;
-            background: var(--bg-color);
-        }
-
-        /* UI Controls Container */
-        .filter-container {
-            position: absolute;
-            top: 24px;
-            left: 50%;
-            transform: translateX(-50%);
-            z-index: 1000;
-            background: var(--container-bg);
-            padding: 6px 8px;
-            border-radius: 4px;
-            /* More squared, traditional look */
-            box-shadow: var(--shadow-lg);
-            display: flex;
-            gap: 4px;
-            white-space: nowrap;
-            overflow-x: auto;
-            max-width: 92vw;
-            backdrop-filter: blur(8px);
-            -webkit-backdrop-filter: blur(8px);
-            transition: background 0.3s ease;
-            border: 1px solid rgba(0, 0, 0, 0.05);
-        }
-
-        .filter-btn {
-            border: none;
-            background: transparent;
-            padding: 10px 20px;
-            border-radius: 2px;
-            /* Slight round only */
-            cursor: pointer;
-            font-size: 0.95rem;
-            font-weight: 700;
-            /* Bold for contrast */
-            color: var(--text-main);
-            /* High Contrast */
-            transition: all 0.3s ease;
-            white-space: nowrap;
-            font-family: 'Noto Serif TC', serif;
-            /* Serif for buttons */
-        }
-
-        .filter-btn:hover {
-            background: rgba(0, 0, 0, 0.05);
-            color: var(--accent-color);
-        }
-
-        .filter-btn.active {
-            background: var(--accent-color);
-            color: #fff !important;
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-        }
-
-        [data-theme="dark"] .filter-btn.active {
-            color: #0f172a !important;
-            /* Dark text on bright accent */
-        }
-
-        /* Floating Buttons (Bottom Right) */
-        .controls-container {
-            position: absolute;
-            bottom: 32px;
-            right: 24px;
-            z-index: 1000;
-            display: flex;
-            flex-direction: column;
-            gap: 16px;
-        }
-
-        .float-btn {
-            width: 56px;
-            height: 56px;
-            background: var(--btn-bg);
-            border-radius: 12px;
-            /* Structured curve */
-            border: 1px solid rgba(0, 0, 0, 0.1);
-            /* Slightly stronger border */
-            box-shadow: var(--shadow-lg);
-            cursor: pointer;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            font-size: 1.25rem;
-            color: var(--text-main);
-            /* High contrast icon */
-            transition: all 0.3s ease;
-        }
-
-        .float-btn:hover {
-            transform: translateY(-2px);
-            color: var(--accent-color);
-            border-color: var(--accent-color);
-        }
-
-        /* Popup Styling - Japanese Card Style */
-        .leaflet-popup-content-wrapper {
-            border-radius: 4px;
-            /* Minimal rounding */
-            box-shadow: var(--shadow-lg);
-            padding: 0;
             overflow: hidden;
-            background: var(--btn-bg);
-            color: var(--text-main);
+            background: #f2f2f7;
         }
 
-        .leaflet-popup-tip {
-            background: var(--btn-bg);
-        }
-
-        .leaflet-popup-content {
-            margin: 0;
-            width: 300px !important;
-            max-width: 88vw;
-        }
-
-        .popup-header {
-            background-color: var(--btn-bg);
-            /* Clean background */
-            border-bottom: 2px solid var(--accent-color);
-            /* Indigo line as accent */
-            color: var(--text-main);
-            padding: 20px 20px 12px 20px;
-        }
-
-        .popup-header h3 {
-            font-size: 1.3rem;
-            margin: 0 0 8px 0;
-            font-weight: 700;
-            font-family: 'Noto Serif TC', serif;
-            /* Serif Title */
-            color: var(--accent-color);
-            line-height: 1.4;
-        }
-
-        [data-theme="dark"] .popup-header h3 {
-            color: var(--accent-color);
-        }
-
-        .popup-meta {
-            font-size: 0.85rem;
-            color: var(--text-sub);
-            display: flex;
-            gap: 12px;
-            font-family: 'Noto Sans TC', sans-serif;
-            letter-spacing: 0.05em;
-        }
-
-        .popup-body {
-            padding: 16px 20px 24px 20px;
-        }
-
-        .popup-desc {
-            font-size: 0.95rem;
-            line-height: 1.6;
-            margin-bottom: 16px;
-            color: var(--text-main);
-            opacity: 0.9;
-            font-weight: 400;
-        }
-
-        .popup-rec {
-            font-size: 0.95rem;
-            margin-bottom: 16px;
-            color: var(--highlight-color);
-            font-weight: 600;
-            display: flex;
-            align-items: flex-start;
-            gap: 8px;
-        }
-
-        .popup-rec i {
-            margin-top: 3px;
-        }
-
-        .popup-row {
-            display: flex;
-            align-items: center;
-            margin-bottom: 8px;
-            font-size: 0.9rem;
-            color: var(--text-sub);
-            letter-spacing: 0.02em;
-        }
-
-        .popup-row i {
-            width: 24px;
-            text-align: center;
-            margin-right: 12px;
-            color: var(--text-sub);
-            /* Subdued icons */
-            font-size: 0.9em;
-        }
-
-        .popup-price {
-            font-family: 'Noto Serif TC', serif;
-            font-weight: 600;
-            color: var(--text-main);
-        }
-
-        .navigate-btn {
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            width: 100%;
-            background: var(--highlight-color);
-            /* Vermilion for action */
-            color: #fff;
-            padding: 14px;
-            border-radius: 4px;
-            /* Minimal rounding */
-            text-decoration: none;
-            font-weight: 500;
-            margin-top: 20px;
-            transition: opacity 0.2s, transform 0.2s;
-            gap: 8px;
-            font-size: 1rem;
-            letter-spacing: 0.05em;
-            box-shadow: 0 2px 8px rgba(211, 56, 28, 0.3);
-        }
-
-        [data-theme="dark"] .navigate-btn {
-            color: #fff;
-            /* Keep white for readability on red */
-            box-shadow: 0 2px 8px rgba(255, 107, 107, 0.3);
-        }
-
-        .navigate-btn:hover {
-            opacity: 0.9;
-            transform: translateY(-1px);
-        }
-
-        /* Custom Map Labels */
-        .map-label {
-            background: transparent;
-            border: none;
-            box-shadow: none;
-            font-size: 13px;
-            font-weight: 700;
-            font-family: 'Noto Serif TC', serif;
-            /* Serif labels */
-            color: var(--label-color);
-            text-shadow:
-                2px 0 var(--label-halo),
-                -2px 0 var(--label-halo),
-                0 2px var(--label-halo),
-                0 -2px var(--label-halo),
-                1px 1px var(--label-halo),
-                -1px -1px var(--label-halo),
-                1px -1px var(--label-halo),
-                -1px 1px var(--label-halo);
-            pointer-events: none !important;
-            white-space: nowrap;
-            margin-top: 8px;
-            letter-spacing: 0.03em;
-        }
-
-        /* Loading Spinner */
+        /* Full Screen Loading */
         #loading {
             position: fixed;
-            top: 0;
-            left: 0;
-            width: 100vw;
-            height: 100vh;
-            background: var(--bg-color);
+            inset: 0;
             z-index: 9999;
+            background: var(--surface);
             display: flex;
+            flex-direction: column;
             justify-content: center;
             align-items: center;
-            flex-direction: column;
-            transition: opacity 0.6s ease;
+            transition: opacity 0.4s ease;
         }
 
         .spinner {
             width: 40px;
             height: 40px;
-            border: 3px solid rgba(0, 0, 0, 0.1);
-            border-top: 3px solid var(--accent-color);
+            border: 4px solid #e1e4e8;
+            border-top: 4px solid var(--primary-color);
             border-radius: 50%;
-            animation: spin 1s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+            animation: spin 0.8s linear infinite;
+            margin-bottom: 16px;
         }
 
         @keyframes spin {
@@ -405,926 +85,789 @@
             }
         }
 
-        /* Current Location Marker */
-        .user-pos-marker {
-            background: var(--highlight-color);
-            border: 2px solid #fff;
+        /* Map */
+        #map {
+            width: 100%;
+            height: 100%;
+            z-index: 1;
+        }
+
+        /* UI Overlay */
+        .ui-safe-area {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 1000;
+            display: flex;
+            flex-direction: column;
+            padding-top: var(--safe-area-top);
+            padding-bottom: var(--safe-area-bottom);
+        }
+
+        /* Search Bar */
+        .search-container {
+            position: relative;
+            /* Anchor for absolute results */
+            pointer-events: auto;
+            padding: 0 16px;
+            margin-bottom: 8px;
+            display: none;
+            /* Hidden by default */
+            animation: slideDown 0.3s ease;
+        }
+
+        @keyframes slideDown {
+            from {
+                opacity: 0;
+                transform: translateY(-10px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .search-box {
+            background: rgba(255, 255, 255, 0.9);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border-radius: var(--radius-pill);
+            padding: 8px 16px;
+            display: flex;
+            align-items: center;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+        }
+
+        .search-box i {
+            color: var(--text-sub);
+            margin-right: 8px;
+        }
+
+        .search-box input {
+            border: none;
+            background: transparent;
+            width: 100%;
+            font-size: 16px;
+            color: var(--text-main);
+            outline: none;
+        }
+
+        /* Search Results Dropdown */
+        #search-results {
+            position: absolute;
+            top: 100%;
+            left: 16px;
+            right: 16px;
+            background: #fff;
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            max-height: 40vh;
+            overflow-y: auto;
+            z-index: 2000;
+            display: none;
+            margin-top: 8px;
+        }
+
+        .search-item {
+            padding: 12px 16px;
+            border-bottom: 1px solid #f0f0f0;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .search-item:last-child {
+            border-bottom: none;
+        }
+
+        .search-item:active {
+            background: #f5f5f5;
+        }
+
+        .search-item-name {
+            font-weight: 600;
+            font-size: 15px;
+            color: var(--text-main);
+        }
+
+        .search-item-meta {
+            font-size: 12px;
+            color: var(--text-sub);
+            margin-top: 2px;
+        }
+
+        /* Top Filter Bar */
+        .filter-container {
+            pointer-events: auto;
+            /* Remove background/backdrop here as search box has it, or keep it consistent */
+            padding-bottom: 8px;
+            display: flex;
+            align-items: center;
+            padding-left: 16px;
+            /* Adjusted layout */
+        }
+
+        .btn-search-toggle {
+            flex: 0 0 40px;
+            height: 40px;
             border-radius: 50%;
-            box-shadow: 0 0 0 4px rgba(211, 56, 28, 0.2);
-            width: 16px;
-            height: 16px;
+            background: rgba(255, 255, 255, 0.9);
+            backdrop-filter: blur(10px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin-right: 8px;
+            cursor: pointer;
+            color: #000;
+            border: 1px solid #c7c7cc;
+            transition: all 0.2s;
+        }
+
+        .btn-search-toggle.active {
+            background: var(--accent-color);
+            color: #000;
+            border-color: #d4a000;
+            transform: scale(1.05);
+            box-shadow: 0 4px 12px rgba(252, 206, 2, 0.4);
+        }
+
+        .filter-scroll {
+            display: flex;
+            gap: 10px;
+            padding: 4px 16px 16px 4px;
+            /* Added bottom/left padding for shadows */
+            overflow-x: auto;
+            flex: 1;
+            scrollbar-width: none;
+            justify-content: flex-start;
+        }
+
+        .filter-scroll::-webkit-scrollbar {
+            display: none;
+        }
+
+        .pill {
+            flex: 1;
+            text-align: center;
+            padding: 8px 0;
+            border-radius: var(--radius-pill);
+            background: #fff;
+            color: #000;
+            font-size: 14px;
+            font-weight: 600;
+            border: 1px solid #c7c7cc;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.15);
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .pill.active {
+            background: var(--accent-color);
+            color: #000;
+            font-weight: 700;
+            border-color: #d4a000;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.25);
+            transform: scale(1.02);
+        }
+
+        /* Floating Locate Button */
+        .btn-locate {
+            position: absolute;
+            bottom: calc(var(--safe-area-bottom) + 80px);
+            right: 20px;
+            width: 56px;
+            height: 56px;
+            background: var(--surface);
+            color: var(--primary-color);
+            border-radius: 50%;
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+            border: 1px solid rgba(0, 0, 0, 0.05);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 24px;
+            cursor: pointer;
+            pointer-events: auto;
+            border: none;
+        }
+
+        .btn-locate:active {
+            transform: scale(0.95);
+            background: #f9f9f9;
+        }
+
+        /* Popup Styles (Card Style) */
+        .leaflet-popup-content-wrapper {
+            padding: 0;
+            border-radius: var(--radius-card);
+            overflow: hidden;
+            box-shadow: var(--shadow-card);
+        }
+
+        .leaflet-popup-content {
+            margin: 0;
+            width: 300px !important;
+        }
+
+        .leaflet-popup-tip {
+            background: #fff;
+        }
+
+        .leaflet-container a.leaflet-popup-close-button {
+            top: 8px;
+            right: 8px;
+            color: #fff;
+            text-shadow: 0 1px 3px rgba(0, 0, 0, 0.5);
+            z-index: 10;
+            font-size: 20px;
+        }
+
+        .card-header {
+            height: 100px;
+            padding: 16px;
+            background: linear-gradient(135deg, #FF9A9E 0%, #FECFEF 100%);
+            /* Default High */
+            display: flex;
+            align-items: flex-end;
+            position: relative;
+        }
+
+        .card-header[data-price="Low"] {
+            background: linear-gradient(135deg, #84fab0 0%, #8fd3f4 100%);
+        }
+
+        .card-header[data-price="Medium"] {
+            background: linear-gradient(135deg, #fccb90 0%, #d57eeb 100%);
+        }
+
+        .card-title {
+            color: white;
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+            font-size: 20px;
+            font-weight: 700;
+            line-height: 1.2;
+            width: 90%;
+        }
+
+        .card-body {
+            padding: 16px;
+            background: #fff;
+        }
+
+        .tags {
+            display: flex;
+            gap: 6px;
+            flex-wrap: wrap;
+            margin-bottom: 12px;
+        }
+
+        .tag {
+            font-size: 11px;
+            padding: 4px 8px;
+            border-radius: 6px;
+            font-weight: 600;
+            background: #f2f2f7;
+            color: var(--text-sub);
+        }
+
+        .tag.cat {
+            background: rgba(0, 122, 255, 0.1);
+            color: var(--primary-color);
+        }
+
+        .tag.price {
+            background: rgba(255, 204, 0, 0.2);
+            color: #d48806;
+        }
+
+        .info-row {
+            margin-bottom: 8px;
+            font-size: 14px;
+            line-height: 1.5;
+            color: var(--text-main);
+        }
+
+        .info-row i {
+            color: var(--text-sub);
+            width: 20px;
+            text-align: center;
+            margin-right: 4px;
+        }
+
+        .must-order {
+            color: var(--danger);
+            font-weight: 500;
+        }
+
+        .desc {
+            color: var(--text-sub);
+            font-size: 13px;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+            margin-bottom: 16px;
+        }
+
+        .btn-nav {
+            display: block;
+            width: 100%;
+            padding: 12px;
+            background: #0062cc;
+            color: #ffffff !important;
+            text-align: center;
+            text-decoration: none;
+            border-radius: 12px;
+            font-weight: 600;
+            font-size: 15px;
+            box-shadow: 0 4px 12px rgba(0, 122, 255, 0.3);
+            transition: opacity 0.2s;
+        }
+
+        .btn-nav:active {
+            opacity: 0.8;
+        }
+
+        /* Marker Clusters */
+        .marker-cluster-small {
+            background-color: rgba(181, 226, 140, 0.6);
+        }
+
+        .marker-cluster-small div {
+            background-color: rgba(110, 204, 57, 0.6);
+        }
+
+        .marker-cluster-medium {
+            background-color: rgba(241, 211, 87, 0.6);
+        }
+
+        .marker-cluster-medium div {
+            background-color: rgba(240, 194, 12, 0.6);
+        }
+
+        .marker-cluster-large {
+            background-color: rgba(253, 156, 115, 0.6);
+        }
+
+        .marker-cluster-large div {
+            background-color: rgba(241, 128, 23, 0.6);
+        }
+
+        .marker-cluster {
+            background-clip: padding-box;
+            border-radius: 20px;
+            font-weight: 700;
+            color: #333;
+            padding: 2px 6px;
+        }
+
+        .leaflet-tooltip {
+            pointer-events: none;
+        }
+
+        .leaflet-tooltip-top:before,
+        .leaflet-tooltip-bottom:before,
+        .leaflet-tooltip-left:before,
+        .leaflet-tooltip-right:before {
+            border: none !important;
         }
     </style>
 </head>
 
 <body>
 
+    <!-- Loading -->
     <div id="loading">
         <div class="spinner"></div>
-        <p style="margin-top:20px;color:var(--text-sub);font-family:'Noto Serif TC',serif;letter-spacing:0.1em;">
-            読み込み中...</p>
+        <div style="font-weight:500; color:#555;">Loading Maps...</div>
     </div>
 
-    <!-- Filter Buttons -->
-    <div class="filter-container">
-        <button class="filter-btn active" data-filter="all">全部</button>
-        <button class="filter-btn" data-filter="北部">北部</button>
-        <button class="filter-btn" data-filter="中部">中部</button>
-        <button class="filter-btn" data-filter="南部">南部</button>
+    <!-- UI Overlay -->
+    <div class="ui-safe-area">
+
+        <div class="search-container">
+            <div class="search-box">
+                <i class="fas fa-search"></i>
+                <input type="text" id="search-input" placeholder="搜尋餐廳、分類..." />
+            </div>
+            <div id="search-results"></div>
+        </div>
+
+        <div class="filter-container">
+            <div class="btn-search-toggle" id="btn-search-toggle">
+                <i class="fas fa-search"></i>
+            </div>
+            <div class="filter-scroll" id="filter-list">
+                <div class="pill active" data-filter="all">全部</div>
+                <div class="pill" data-filter="北部">北部</div>
+                <div class="pill" data-filter="中部">中部</div>
+                <div class="pill" data-filter="南部">南部</div>
+                <div class="pill" data-filter="飯店">飯店</div>
+            </div>
+        </div>
+
+        <button class="btn-locate" id="btn-locate"><i class="fas fa-crosshairs"></i></button>
     </div>
 
-    <!-- Map -->
     <div id="map"></div>
 
-    <!-- Floating Buttons -->
-    <div class="controls-container">
-        <!-- Dark Mode Toggle -->
-        <button class="float-btn" id="btn-theme" title="切換深色模式">
-            <i class="fas fa-moon"></i>
-        </button>
-
-        <!-- Location -->
-        <button class="float-btn" id="btn-locate" title="我的位置">
-            <i class="fas fa-location-arrow"></i>
-        </button>
-    </div>
-
-    <!-- Leaflet JS -->
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
-        integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+    <!-- Scripts -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="https://unpkg.com/leaflet.markercluster@1.4.1/dist/leaflet.markercluster.js"></script>
 
     <script>
-        // ---------------------------------------------------------
-        // 1. Data
-        // ---------------------------------------------------------
-        const restaurantsData = [
-            {
-                "name": "珀塔瑪 牧志市場店",
-                "lat": 26.2151837,
-                "lng": 127.6879713,
-                "region": "南部",
-                "category": "美食",
-                "price": "¥1000-¥3000",
-                "description": "沖繩必吃的豬肉蛋飯糰始祖，米飯鬆軟，內餡豐富，是牧志市場的超人氣早餐選擇。",
-                "recommended": "炸蝦豬肉蛋飯糰、島豆腐飯糰"
-            },
-            {
-                "name": "珀塔瑪 那霸機場國內線到達大廳店",
-                "lat": 26.2065616,
-                "lng": 127.6508027,
-                "region": "南部",
-                "category": "美食",
-                "price": "¥1000-¥3000",
-                "description": "抵達沖繩後的第一餐首選！現點現做的熱騰騰飯糰，讓旅程有個美好的開始。",
-                "recommended": "炸蝦豬肉蛋飯糰、明太子美乃滋飯糰"
-            },
-            {
-                "name": "珀塔瑪 那霸機場國際線美食區店",
-                "lat": 26.2078028,
-                "lng": 127.6504602,
-                "region": "南部",
-                "category": "美食",
-                "price": "¥1000-¥3000",
-                "description": "位於國際線航廈的美食區，回國前打包一份美味飯糰的最佳選擇。",
-                "recommended": "苦瓜天婦羅飯糰"
-            },
-            {
-                "name": "燒肉王（那覇久茂地店）",
-                "lat": 26.2193541,
-                "lng": 127.6820814,
-                "region": "南部",
-                "category": "美食",
-                "price": "¥1000-¥3000",
-                "description": "日本知名的連鎖燒肉吃到飽，肉質鮮美，菜色多樣，是高CP值的聚餐好去處。",
-                "recommended": "壺漬橫膈膜、炙燒壽喜燒牛五花"
-            },
-            {
-                "name": "燒肉王（沖繩日橋店）",
-                "lat": 26.1961755,
-                "lng": 127.7186496,
-                "region": "南部",
-                "category": "美食",
-                "price": "¥1000-¥3000",
-                "description": "寬敞舒適的燒肉吃到飽餐廳，適合家庭旅遊或多人團體用餐。",
-                "recommended": "國產牛吃到飽方案"
-            },
-            {
-                "name": "燒肉王（那覇新都心店）",
-                "lat": 26.2284582,
-                "lng": 127.6906379,
-                "region": "南部",
-                "category": "美食",
-                "price": "¥1000-¥3000",
-                "description": "位於新都心商圈，逛街購物後的最佳補給站，享受大口吃肉的滿足感。",
-                "recommended": "期間限定菜色"
-            },
-            {
-                "name": "炭火焼肉専門店 牛皇",
-                "lat": 26.2178299,
-                "lng": 127.6815803,
-                "region": "南部",
-                "category": "美食",
-                "price": "¥1000-¥3000",
-                "description": "講究炭火燒烤的專業燒肉店，提供高品質的牛肉與精緻的日式服務。",
-                "recommended": "特選和牛拼盤、厚切牛舌"
-            },
-            {
-                "name": "燒肉本部牧場 那霸店",
-                "lat": 26.2153519,
-                "lng": 127.6794203,
-                "region": "南部",
-                "category": "美食",
-                "price": "¥1000-¥3000",
-                "description": "使用自家牧場直送的新鮮本部牛，肉質鮮嫩多汁，是品嚐沖繩和牛的絕佳選擇。",
-                "recommended": "本部牛豪華拼盤"
-            },
-            {
-                "name": "燒肉本部牧場 國際通店",
-                "lat": 26.2135207,
-                "lng": 127.6811033,
-                "region": "南部",
-                "category": "美食",
-                "price": "¥1000-¥3000",
-                "description": "位於繁華的國際通，交通便利，能輕鬆享用頂級的沖繩和牛燒肉。",
-                "recommended": "午間燒肉套餐"
-            },
-            {
-                "name": "目利銀次 新都心店",
-                "lat": 26.2301233,
-                "lng": 127.6928864,
-                "region": "南部",
-                "category": "美食",
-                "price": "¥1000-¥3000",
-                "description": "裝潢獨特且氣氛熱鬧的居酒屋，提供產地直送的新鮮海鮮料理。",
-                "recommended": "本日鮮魚六點刺身盛合、海膽醬烤淡菜"
-            },
-            {
-                "name": "暖暮拉麵 那霸牧志店",
-                "lat": 26.2178669,
-                "lng": 127.6873312,
-                "region": "南部",
-                "category": "美食",
-                "price": "¥1000-¥3000",
-                "description": "九州豚骨拉麵名店，湯頭濃郁香醇，是沖繩排隊人氣王，必吃宵夜首選。",
-                "recommended": "半熟蛋芝麻蔥花拉麵、烈火拉麵"
-            },
-            {
-                "name": "暖暮拉麵糸滿店",
-                "lat": 26.1510002,
-                "lng": 127.6726852,
-                "region": "南部",
-                "category": "美食",
-                "price": "¥1000-¥3000",
-                "description": "位於南部的暖暮分店，停車方便，不用大排長龍也能享用美味的豚骨拉麵。",
-                "recommended": "一口餃子"
-            },
-            {
-                "name": "琉家拉麵 國際通本店",
-                "lat": 26.2140732,
-                "lng": 127.6834725,
-                "region": "南部",
-                "category": "美食",
-                "price": "¥1000-¥3000",
-                "description": "主打獨家黑蒜油豚骨湯頭，麵條勁道，深受在地人與遊客喜愛。",
-                "recommended": "琉焦蒜豬骨麵"
-            },
-            {
-                "name": "Mazemen Mahoroba 台灣乾拌麵",
-                "lat": 26.2176405,
-                "lng": 127.687215,
-                "region": "南部",
-                "category": "美食",
-                "price": "¥1000-¥3000",
-                "description": "融合日式細緻與台式風味的乾拌麵，辛香料層次豐富，吃過一次就難以忘懷。",
-                "recommended": "台灣乾拌麵 (加辣)"
-            },
-            {
-                "name": "Marutama味噌飯屋",
-                "lat": 26.210554,
-                "lng": 127.679864,
-                "region": "南部",
-                "category": "美食",
-                "price": "¥1000-¥3000",
-                "description": "創業多年的味噌料理專門店，自製味噌湯頭溫潤甘醇，是暖胃的幸福滋味。",
-                "recommended": "味噌定食"
-            },
-            {
-                "name": "魚屋直營食堂",
-                "lat": 26.1904014,
-                "lng": 127.6598479,
-                "region": "南部",
-                "category": "美食",
-                "price": "¥1000-¥3000",
-                "description": "由鮮魚店直營的食堂，生魚片新鮮厚切，海鮮丼飯份量十足，CP值極高。",
-                "recommended": "特上鮮魚丼"
-            },
-            {
-                "name": "Sakanaya Chokuei Shokudo Uomaru",
-                "lat": 26.2230778,
-                "lng": 127.6847113,
-                "region": "南部",
-                "category": "美食",
-                "price": "¥1000-¥3000",
-                "description": "提供各式新鮮海鮮定食，食材當日直送，是在地人推薦的隱藏版美食。",
-                "recommended": "奶油烤魚定食"
-            },
-            {
-                "name": "幸福鬆餅",
-                "lat": 26.1765151,
-                "lng": 127.640567,
-                "region": "南部",
-                "category": "美食",
-                "price": "¥1000-¥3000",
-                "description": "口感如雲朵般鬆軟綿密的舒芙蕾鬆餅，搭配海景露台，享受悠閒的午茶時光。",
-                "recommended": "幸福厚鬆餅、濃厚起司慕斯鬆餅"
-            },
-            {
-                "name": "浜邊的茶屋",
-                "lat": 26.1335308,
-                "lng": 127.7846459,
-                "region": "南部",
-                "category": "美食",
-                "price": "¥1000-¥3000",
-                "description": "海景第一排的絕美咖啡廳，窗外就是一望無際的蔚藍大海，非常適合放空療癒。",
-                "recommended": "黑糖戚風蛋糕、洛神花茶"
-            },
-            {
-                "name": "Okinawa Soba & Cafe Yagiya（屋宜家 やぎや）",
-                "lat": 26.127333,
-                "lng": 127.7369419,
-                "region": "南部",
-                "category": "美食",
-                "price": "¥1000-¥3000",
-                "description": "登錄為有形文化財的古民家餐廳，在充滿歷史感的空間中享用道地的沖繩麵。",
-                "recommended": "豆漿軟骨沖繩麵"
-            },
-            {
-                "name": "Cafe Kurukuma（Cafe薑黃花）",
-                "lat": 26.1621216,
-                "lng": 127.8123779,
-                "region": "南部",
-                "category": "美食",
-                "price": "¥1000-¥3000",
-                "description": "擁有無敵海景的泰式料理餐廳，香料運用道地，邊吃飯邊看海是最高享受。",
-                "recommended": "綠咖哩雞、泰式炒河粉"
-            },
-            {
-                "name": "oHacorté Izumizaki",
-                "lat": 26.210674,
-                "lng": 127.6791086,
-                "region": "南部",
-                "category": "美食",
-                "price": "¥1000-¥3000",
-                "description": "沖繩知名的人氣水果塔專賣店，塔皮酥脆，水果鮮甜，是完美的甜點伴手禮。",
-                "recommended": "季節水果塔、檸檬蛋糕"
-            },
-            {
-                "name": "琉球之牛 那霸國際通（3F）",
-                "lat": 26.2162955,
-                "lng": 127.6891753,
-                "region": "南部",
-                "category": "美食",
-                "price": "¥1000-¥3000",
-                "description": "嚴選頂級肉質的燒肉名店，套餐精緻，能品嚐到入口即化的奢華美味。",
-                "recommended": "頂級縣產和牛套餐"
-            },
-            {
-                "name": "傑克牛排館",
-                "lat": 26.2128953,
-                "lng": 127.6724952,
-                "region": "南部",
-                "category": "美食",
-                "price": "¥1000-¥3000",
-                "description": "美軍統治時期流傳下來的老字號牛排館，充滿復古美式風情，深受在地人愛戴。",
-                "recommended": "特選里脊牛排 (Tenderloin Steak)"
-            },
-            {
-                "name": "中本天婦羅店",
-                "lat": 26.1315502,
-                "lng": 127.7721275,
-                "region": "南部",
-                "category": "美食",
-                "price": "¥1000-¥3000",
-                "description": "位於奥武島的人氣天婦羅店，現炸的海鮮與蔬菜天婦羅便宜又好吃。",
-                "recommended": "海藻天婦羅、炸魚天婦羅"
-            },
-            {
-                "name": "大城天婦羅店",
-                "lat": 26.1285246,
-                "lng": 127.771141,
-                "region": "南部",
-                "category": "美食",
-                "price": "¥1000-¥3000",
-                "description": "奥武島上的另一家天婦羅名店，口感酥脆，適合買一份到海邊邊看貓咪邊享用。",
-                "recommended": "花枝天婦羅"
-            },
-            {
-                "name": "燒肉王（北谷店）",
-                "lat": 26.3211344,
-                "lng": 127.7591385,
-                "region": "中部",
-                "category": "美食",
-                "price": "¥1000-¥3000",
-                "description": "鄰近美國村的燒肉吃到飽，交通便利，逛完街來大吃一頓非常過癮。",
-                "recommended": "四大名物燒肉"
-            },
-            {
-                "name": "燒肉王（沖縄美里店）",
-                "lat": 26.3482742,
-                "lng": 127.8241365,
-                "region": "中部",
-                "category": "美食",
-                "price": "¥1000-¥3000",
-                "description": "中部地區的熱門燒肉店，提供豐富的肉類選擇與自助吧，適合朋友聚會。",
-                "recommended": "厚切牛舌"
-            },
-            {
-                "name": "暖暮拉麵 中城店",
-                "lat": 26.2530764,
-                "lng": 127.7735419,
-                "region": "中部",
-                "category": "美食",
-                "price": "¥1000-¥3000",
-                "description": "中城區域的拉麵好選擇，湯頭穩定，是想吃熱騰騰拉麵時的可靠去處。",
-                "recommended": "叉燒豚骨拉麵"
-            },
-            {
-                "name": "暖暮拉麵 沖繩美原店",
-                "lat": 26.3483952,
-                "lng": 127.8183983,
-                "region": "中部",
-                "category": "美食",
-                "price": "¥1000-¥3000",
-                "description": "位於沖繩市的暖暮分店，維持一貫的濃郁豚骨風味，滿足當地的拉麵愛好者。",
-                "recommended": "溏心蛋豚骨拉麵"
-            },
-            {
-                "name": "暖暮拉麵 北谷砂辺店",
-                "lat": 26.3305812,
-                "lng": 127.7450324,
-                "region": "中部",
-                "category": "美食",
-                "price": "¥1000-¥3000",
-                "description": "靠近海邊的拉麵店，玩水或潛水後，來一碗熱湯拉麵最能補充體力。",
-                "recommended": "芝麻蔥拉麵"
-            },
-            {
-                "name": "Houki Boshi 可麗露 港川本店",
-                "lat": 26.2626869,
-                "lng": 127.7156565,
-                "region": "中部",
-                "category": "美食",
-                "price": "¥1000-¥3000",
-                "description": "港川外人住宅區的甜點名店，黑糖可麗露外脆內軟，造型小巧可愛。",
-                "recommended": "沖繩黑糖可麗露、火龍果可麗露"
-            },
-            {
-                "name": "oHacorte 港川店",
-                "lat": 26.2624873,
-                "lng": 127.7153652,
-                "region": "中部",
-                "category": "美食",
-                "price": "¥1000-¥3000",
-                "description": "充滿鄉村風情的超人氣水果塔店，老屋改建的空間氛圍極佳，拍照超美。",
-                "recommended": "綜合水果塔"
-            },
-            {
-                "name": "雞湯拉麵屋 石工夫",
-                "lat": 26.2633717,
-                "lng": 127.7160947,
-                "region": "中部",
-                "category": "美食",
-                "price": "¥1000-¥3000",
-                "description": "清爽不油膩的雞白湯拉麵，湯頭鮮甜回甘，是港川外人住宅區的隱藏美味。",
-                "recommended": "特製雞白湯拉麵"
-            },
-            {
-                "name": "Seaside Cafe Hanon",
-                "lat": 26.3161628,
-                "lng": 127.7538499,
-                "region": "中部",
-                "category": "美食",
-                "price": "¥1000-¥3000",
-                "description": "美式風格的海景鬆餅店，鬆餅香氣濃郁，還能欣賞美國村的迷人海景。",
-                "recommended": "鹽味焦糖鬆餅"
-            },
-            {
-                "name": "Taco Rice Cafe Kijimuna",
-                "lat": 26.3159218,
-                "lng": 127.7546408,
-                "region": "中部",
-                "category": "美食",
-                "price": "¥1000-¥3000",
-                "description": "沖繩靈魂美食塔可飯專賣店，獨創的歐姆蛋塔可飯口感滑嫩，風味十足。",
-                "recommended": "歐姆蛋塔可飯"
-            },
-            {
-                "name": "Chatan Dunchi",
-                "lat": 26.3153165,
-                "lng": 127.7537217,
-                "region": "中部",
-                "category": "美食",
-                "price": "¥1000-¥3000",
-                "description": "提供精緻沖繩料理的景觀餐廳，露台座位可以俯瞰美國村的夜景，氣氛浪漫。",
-                "recommended": "阿古豬涮涮鍋"
-            },
-            {
-                "name": "The Calif Kitchen Okinawa",
-                "lat": 26.3157304,
-                "lng": 127.7537565,
-                "region": "中部",
-                "category": "美食",
-                "price": "¥1000-¥3000",
-                "description": "充滿西海岸風情的加州料理餐廳，環境明亮舒適，適合享受悠閒的早午餐。",
-                "recommended": "酪梨培根起司堡"
-            },
-            {
-                "name": "蒸気海鮮 — Chatan Steam Seafood",
-                "lat": 26.3202086,
-                "lng": 127.7536892,
-                "region": "中部",
-                "category": "美食",
-                "price": "¥1000-¥3000",
-                "description": "以蒸氣烹調保留海鮮原味，食材新鮮，吃得到大海的鮮甜滋味。",
-                "recommended": "蒸氣海鮮套餐"
-            },
-            {
-                "name": "琉球之牛 北谷店 (美國村)",
-                "lat": 26.3204651,
-                "lng": 127.7536529,
-                "region": "中部",
-                "category": "美食",
-                "price": "¥1000-¥3000",
-                "description": "美國村內的頂級燒肉店，裝潢時尚，肉質無可挑剔，是慶祝特別日子的好地方。",
-                "recommended": "特上牛五花"
-            },
-            {
-                "name": "迴轉壽司市場 美浜店",
-                "lat": 26.3166986,
-                "lng": 127.7592467,
-                "region": "中部",
-                "category": "美食",
-                "price": "¥1000-¥3000",
-                "description": "位於美國村入口的迴轉壽司，食材種類豐富且新鮮，是觀光客的人氣選擇。",
-                "recommended": "鮪魚中腹"
-            },
-            {
-                "name": "Mother Coffee",
-                "lat": 26.3090886,
-                "lng": 127.7812301,
-                "region": "中部",
-                "category": "美食",
-                "price": "¥1000-¥3000",
-                "description": "全日本第一家鑄鐵鍋鬆餅專賣店，熱騰騰的鬆餅口感獨特，一定要來嚐鮮。",
-                "recommended": "原味鑄鐵鍋鬆餅"
-            },
-            {
-                "name": "燒肉本部牧場 本部總店",
-                "lat": 26.657838,
-                "lng": 127.8854215,
-                "region": "北部",
-                "category": "美食",
-                "price": "¥1000-¥3000",
-                "description": "鄰近美麗海水族館，提供最新鮮的本部牛燒肉，遊玩北部時的必吃美食。",
-                "recommended": "本部牛拼盤"
-            },
-            {
-                "name": "燒肉王（名護店）",
-                "lat": 26.6061485,
-                "lng": 127.9803616,
-                "region": "北部",
-                "category": "美食",
-                "price": "¥1000-¥3000",
-                "description": "名護地區的燒肉吃到飽首選，空間寬敞，停車方便，適合自駕遊旅客。",
-                "recommended": "牛五花"
-            },
-            {
-                "name": "燒肉本部牧場 名護店",
-                "lat": 26.6021033,
-                "lng": 127.9637637,
-                "region": "北部",
-                "category": "美食",
-                "price": "¥1000-¥3000",
-                "description": "在名護市也能品嚐到高品質的本部牛，午間套餐CP值高，不容錯過。",
-                "recommended": "骰子牛午餐"
-            },
-            {
-                "name": "暖暮拉麵 名護店",
-                "lat": 26.5823173,
-                "lng": 127.9846708,
-                "region": "北部",
-                "category": "美食",
-                "price": "¥1000-¥3000",
-                "description": "前往北部景點途中可以順道停留的拉麵店，快速美味，補充旅途能量。",
-                "recommended": "豚骨拉麵"
-            },
-            {
-                "name": "琉球の牛 恩納本館",
-                "lat": 26.4519972,
-                "lng": 127.8056266,
-                "region": "北部",
-                "category": "美食",
-                "price": "¥1000-¥3000",
-                "description": "恩納村的高級燒肉店，提供在地的頂級和牛，享受在度假區的奢華晚餐。",
-                "recommended": "夢幻牛舌"
-            },
-            {
-                "name": "琉球の牛 恩納別館",
-                "lat": 26.4506943,
-                "lng": 127.8038175,
-                "region": "北部",
-                "category": "美食",
-                "price": "¥1000-¥3000",
-                "description": "位於本館附近的別館，同樣提供高品質的服務與美味燒肉，環境優雅。",
-                "recommended": "特上和牛里脊"
-            },
-            {
-                "name": "元祖海葡萄總店",
-                "lat": 26.5041478,
-                "lng": 127.8505469,
-                "region": "北部",
-                "category": "美食",
-                "price": "¥1000-¥3000",
-                "description": "能品嚐到新鮮爽脆海葡萄的海鮮蓋飯專賣店，是體驗沖繩特色食材的好地方。",
-                "recommended": "海葡萄丼"
-            },
-            {
-                "name": "Hawaiian Pancakes House Paanilani",
-                "lat": 26.508997,
-                "lng": 127.8722411,
-                "region": "北部",
-                "category": "美食",
-                "price": "¥1000-¥3000",
-                "description": "深受當地人喜愛的夏威夷鬆餅店，招牌堅果醬鬆餅香氣十足，份量驚人。",
-                "recommended": "堅果醬鬆餅 (Nuts N' Nuts Pancake)"
-            },
-            {
-                "name": "Yukino",
-                "lat": 26.5938492,
-                "lng": 127.9650345,
-                "region": "北部",
-                "category": "美食",
-                "price": "¥1000-¥3000",
-                "description": "名護當地的家庭式居酒屋，料理種類豐富且價格實惠，充滿人情味。",
-                "recommended": "生魚片拼盤、炒苦瓜"
-            },
-            {
-                "name": "百年古家 大家 阿古豬",
-                "lat": 26.6209963,
-                "lng": 127.9637637,
-                "region": "北部",
-                "category": "美食",
-                "price": "¥1000-¥3000",
-                "description": "在百年歷史的古民宅中品嚐阿古豬涮涮鍋，還能欣賞庭園瀑布造景，氣氛絕佳。",
-                "recommended": "阿古豬涮涮鍋套餐"
-            },
-            {
-                "name": "Captain Kangaroo Hamburger",
-                "lat": 26.6226879,
-                "lng": 127.8904418,
-                "region": "北部",
-                "category": "美食",
-                "price": "¥1000-¥3000",
-                "description": "被譽為沖繩最強漢堡的名店，漢堡多汁厚實，每次去都要做好排隊的準備。",
-                "recommended": "Sparky Burger (特別漢堡)"
-            },
-            {
-                "name": "海人料理 海邦丸（本店）",
-                "lat": 26.682195,
-                "lng": 127.8836417,
-                "region": "北部",
-                "category": "美食",
-                "price": "¥1000-¥3000",
-                "description": "位於Ala Mahaina Condo Hotel內，每日直送的新鮮海鮮定食，美味又方便。",
-                "recommended": "海鮮丼"
-            },
-            {
-                "name": "海人料理海邦丸（二店）",
-                "lat": 26.68523,
-                "lng": 127.8776939,
-                "region": "北部",
-                "category": "美食",
-                "price": "¥1000-¥3000",
-                "description": "海邦丸的另一據點，同樣提供新鮮美味的海鮮料理，滿足饕客的味蕾。",
-                "recommended": "生魚片定食"
-            },
-            {
-                "name": "岸本食堂（本店）",
-                "lat": 26.6603253,
-                "lng": 127.8958949,
-                "region": "北部",
-                "category": "美食",
-                "price": "¥1000-¥3000",
-                "description": "創業百年的沖繩麵老舖，柴魚湯頭濃郁，麵條口感紮實，是必朝聖的經典名店。",
-                "recommended": "岸本沖繩麵 (手打麵)"
-            },
-            {
-                "name": "岸本食堂（八重岳店）",
-                "lat": 26.6571779,
-                "lng": 127.9110342,
-                "region": "北部",
-                "category": "美食",
-                "price": "¥1000-¥3000",
-                "description": "岸本食堂的分店，擁有寬敞的停車場與座位，適合開車前往的遊客。",
-                "recommended": "多汁炊飯"
-            },
-            {
-                "name": "古宇利蝦蝦飯",
-                "lat": 26.6969393,
-                "lng": 128.0197864,
-                "region": "北部",
-                "category": "美食",
-                "price": "¥1000-¥3000",
-                "description": "來到古宇利島必吃的蒜香蝦飯，餐車起家的人氣美食，蒜味濃厚超級下飯。",
-                "recommended": "蒜香蝦飯 (Original Garlic Shrimp)"
-            },
-            {
-                "name": "食事処 錦屋",
-                "lat": 26.697656,
-                "lng": 128.0197426,
-                "region": "北部",
-                "category": "美食",
-                "price": "¥1000-¥3000",
-                "description": "古宇利島上的在地食堂，提供家常風味的沖繩料理，價格平實親民。",
-                "recommended": "海膽丼"
-            },
-            {
-                "name": "Airando Fiji Restaurant & Cafe",
-                "lat": 26.69797,
-                "lng": 128.0197502,
-                "region": "北部",
-                "category": "美食",
-                "price": "¥1000-¥3000",
-                "description": "島上風格獨特的餐廳，提供特色異國料理，是想換換口味時的好選擇。",
-                "recommended": "斐濟咖哩"
-            },
-            {
-                "name": "Shirasa 食堂",
-                "lat": 26.6966389,
-                "lng": 128.0166389,
-                "region": "北部",
-                "category": "美食",
-                "price": "¥1000-¥3000",
-                "description": "古宇利島著名的海膽蓋飯食堂，季節限定的新鮮海膽鮮甜美味，老饕必訪。",
-                "recommended": "海膽丼 (季節限定)"
-            },
-            {
-                "name": "海人料理 亀ぬ浜",
-                "lat": 26.501421,
-                "lng": 127.857863,
-                "region": "北部",
-                "category": "美食",
-                "price": "¥1000-¥3000",
-                "description": "位於萬座毛附近的海鮮餐廳，能一邊欣賞海景一邊品嚐新鮮的海產料理。",
-                "recommended": "海葡萄海鮮丼"
-            },
-            {
-                "name": "海人食堂",
-                "lat": 26.3902334,
-                "lng": 127.7235703,
-                "region": "北部",
-                "category": "美食",
-                "price": "¥1000-¥3000",
-                "description": "讀谷村漁港旁的食堂，以豪邁的海鮮丼聞名，食材新鮮度沒話說。",
-                "recommended": "海人丼"
-            },
-            {
-                "name": "披薩喫茶 花人逢",
-                "lat": 26.6685007,
-                "lng": 127.9007959,
-                "region": "北部",
-                "category": "美食",
-                "price": "¥1000-¥3000",
-                "description": "位於半山腰的古民家披薩店，可以俯瞰絕美海景，招牌披薩起司牽絲超誘人。",
-                "recommended": "手工披薩、西印度櫻桃汁"
-            },
-            {
-                "name": "King Tacos 金武本店",
-                "lat": 26.4532829,
-                "lng": 127.9172771,
-                "region": "北部",
-                "category": "美食",
-                "price": "¥1000-¥3000",
-                "description": "塔可飯的發源地，份量驚人的塔可飯與塔可餅，是體驗沖繩美式文化的必吃美食。",
-                "recommended": "塔可飯起司蔬菜 (Taco Rice Cheese Vegetable)"
-            },
-            {
-                "name": "山原蕎麥麵",
-                "lat": 26.650532,
-                "lng": 127.9494745,
-                "region": "北部",
-                "category": "美食",
-                "price": "¥1000-¥3000",
-                "description": "名護地區的老字號排骨麵店，排骨燉煮到軟嫩入味，湯頭鮮美，每日限量賣完為止。",
-                "recommended": "排骨沖繩麵 (Soki Soba)"
-            }
-        ];
+        // --- CONFIG ---
+        const SHEET_JSONP = "https://docs.google.com/spreadsheets/d/1igtQX_K3H24gSYxyh6zeridz4pbYVRTCJYTpCdCRnF4/gviz/tq?tqx=out:json&tq&callback=window.handleJsonp";
 
-        // ---------------------------------------------------------
-        // 2. Application Logic
-        // ---------------------------------------------------------
-        const map = L.map('map', {
-            zoomControl: false
-        }).setView([26.4, 127.9], 9);
+        // --- STATE ---
+        let map, markersCluster;
+        let allData = [];
+        let userMarker;
+        // let categories = new Set(); // Removed
 
-        L.control.zoom({ position: 'topright' }).addTo(map);
+        // --- INIT ---
+        function initApp() {
+            // 1. Setup Map (CartoDB Voyager)
+            map = L.map('map', { zoomControl: false }).setView([26.4, 127.9], 10);
 
-        // Tile Layers
-        const tiles = {
-            light: 'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png',
-            dark: 'https://{s}.basemaps.cartocdn.com/rastertiles/dark_all/{z}/{x}/{y}{r}.png'
+            L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
+                attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>',
+                subdomains: 'abcd',
+                maxZoom: 20
+            }).addTo(map);
+
+            // Move Zoom Control to bottom left if needed but we hid it for mobile feel
+            // L.control.zoom({ position: 'bottomleft' }).addTo(map);
+
+            // 2. Setup Cluster
+            markersCluster = L.markerClusterGroup({
+                showCoverageOnHover: false,
+                maxClusterRadius: 50
+            });
+            map.addLayer(markersCluster);
+
+            // 3. Fetch Data
+            fetchData();
+
+            // 4. Events
+            document.getElementById('btn-locate').addEventListener('click', locateUser);
+
+            // Search Input
+            document.getElementById('search-input').addEventListener('input', () => {
+                applyFilter();
+            });
+
+            // Toggle Search Bar
+            document.getElementById('btn-search-toggle').addEventListener('click', (e) => {
+                const container = document.querySelector('.search-container');
+                const btn = e.currentTarget;
+
+                if (container.style.display === 'block') {
+                    container.style.display = 'none';
+                    btn.classList.remove('active');
+                    // Optional: Clear search when closed? 
+                    // document.getElementById('search-input').value = ''; 
+                    // applyFilter();
+                } else {
+                    container.style.display = 'block';
+                    btn.classList.add('active');
+                    document.getElementById('search-input').focus();
+                }
+            });
+
+            // Filter Delegation
+            document.getElementById('filter-list').addEventListener('click', (e) => {
+                if (e.target.classList.contains('pill')) {
+                    document.querySelectorAll('.pill').forEach(p => p.classList.remove('active'));
+                    e.target.classList.add('active');
+                    applyFilter();
+                }
+            });
+        }
+
+        // --- DATA ---
+        function fetchData() {
+            // Google Shim
+            window.google = { visualization: { Query: { setResponse: window.handleJsonp } } };
+
+            const script = document.createElement('script');
+            script.src = SHEET_JSONP + "&_=" + Date.now();
+            script.onerror = () => { alert("Data Load Failed"); removeLoading(); };
+            document.body.appendChild(script);
+        }
+
+        window.handleJsonp = function (json) {
+            if (!json || !json.table || !json.table.rows) return;
+
+            // --- Dynamic Mapping Logic ---
+            const cols = json.table.cols;
+            const colMap = {};
+            cols.forEach((c, i) => { if (c && c.label) colMap[c.label.toLowerCase().trim()] = i; });
+            const getIdx = (...ns) => { for (let n of ns) if (colMap[n] !== undefined) return colMap[n]; return -1; };
+
+            const idx = {
+                region: getIdx('region', '地區'),
+                name: getIdx('name', '店名'),
+                cat: getIdx('category', '分類'),
+                price: getIdx('price', '價格'),
+                must: getIdx('must_order', '必點', 'recommended'),
+                desc: getIdx('description', '簡介', 'notes', '備註'),
+                addr1: getIdx('address', '地址'),
+                addr2: getIdx('map', 'map code'), // Secondary address source
+                link: getIdx('gmap_link', '連結', 'google map', 'map'),
+                lat: getIdx('lat', 'latitude', '緯度'),
+                lng: getIdx('lng', 'longitude', '經度')
+            };
+
+            const rows = json.table.rows;
+            allData = rows.map(r => {
+                const c = r.c;
+                if (!c) return null;
+                const v = (i) => (i >= 0 && c[i] && c[i].v !== null) ? String(c[i].v).trim() : "";
+                const getNum = (i) => {
+                    if (i >= 0 && c[i] && c[i].v !== null) {
+                        const val = parseFloat(c[i].v);
+                        return isNaN(val) ? null : val;
+                    }
+                    return null;
+                };
+
+                // Address Fallback Logic
+                // If 'Address' column is empty, try 'Map' column
+                let displayAddr = v(idx.addr1) || v(idx.addr2);
+
+                // 1. Explicit Columns
+                let lat = getNum(idx.lat);
+                let lng = getNum(idx.lng);
+
+                // 2. Scan Link & Address/Map Column for URL Coords
+                if (lat === null || lng === null) {
+                    // Check Link, then Map column, then Name (rare but possible)
+                    const targets = [v(idx.link), v(idx.addr2), v(idx.addr1)];
+                    for (const url of targets) {
+                        if (!url) continue;
+                        // Regex @lat,lng
+                        const atMatch = url.match(/@(-?\d+\.\d+),(-?\d+\.\d+)/);
+                        if (atMatch) { lat = parseFloat(atMatch[1]); lng = parseFloat(atMatch[2]); break; }
+                        // Regex q=lat,lng
+                        const qMatch = url.match(/q=(-?\d+\.\d+),(-?\d+\.\d+)/);
+                        if (qMatch) { lat = parseFloat(qMatch[1]); lng = parseFloat(qMatch[2]); break; }
+                        // Regex 3d...4d...
+                        const dataMatch = url.match(/3d(-?\d+\.\d+)!4d(-?\d+\.\d+)/);
+                        if (dataMatch) { lat = parseFloat(dataMatch[1]); lng = parseFloat(dataMatch[2]); break; }
+                    }
+                }
+
+                // 3. String Scan "Lat,Lng" in ANY cell
+                if (lat === null || lng === null) {
+                    c.forEach(cell => {
+                        if (cell && cell.v !== null) {
+                            const str = String(cell.v);
+                            // Look for "26.123, 127.456" pattern (space tolerant)
+                            const commaMatch = str.match(/(\d{2,3}\.\d+)[,\s]+(\d{3}\.\d+)/);
+                            if (commaMatch) {
+                                const latC = parseFloat(commaMatch[1]);
+                                const lngC = parseFloat(commaMatch[2]);
+                                // Validate roughly Okinawa box
+                                if (latC > 24 && latC < 28 && lngC > 126 && lngC < 130) {
+                                    lat = latC;
+                                    lng = lngC;
+                                }
+                            }
+                        }
+                    });
+                }
+
+                // 4. Single Number Heuristic (Old fallback)
+                if (lat === null || lng === null) {
+                    c.forEach(cell => {
+                        if (cell && typeof cell.v === 'number') {
+                            if (cell.v > 24 && cell.v < 28) lat = cell.v;
+                            if (cell.v > 126 && cell.v < 130) lng = cell.v;
+                        }
+                    });
+                }
+
+                if (!v(idx.name) || !lat || !lng) return null;
+
+                return {
+                    region: v(idx.region),
+                    name: v(idx.name),
+                    category: v(idx.cat) || "其他", // Ensure string
+                    price: v(idx.price),
+                    must: v(idx.must),
+                    desc: v(idx.desc) || displayAddr, // Fallback desc to addr
+                    addr: displayAddr,
+                    link: v(idx.link),
+                    lat, lng
+                };
+            }).filter(x => x);
+
+            // populateCategoryFilters(); // Removed
+            renderMarkers(allData);
+            removeLoading();
         };
 
-        // Current tile layer
-        let tileLayer = L.tileLayer(tiles.light, {
-            attribution: '&copy; OpenStreetMap &copy; CARTO',
-            maxZoom: 20
-        }).addTo(map);
+        // function populateCategoryFilters() { ... } // Removed
 
-        let markers = [];
-        let currentFilter = 'all';
-
-        // Initialize Data
-        function initApp() {
-            renderMarkers(restaurantsData);
-            document.getElementById('loading').style.opacity = '0';
-            setTimeout(() => document.getElementById('loading').remove(), 500);
-        }
-
-        // --- Price Color Logic ---
-        function getMarkerColor(priceStr) {
-            // Default: Indigo for normal price
-            let color = "#1e3b79";
-            if (document.body.getAttribute('data-theme') === 'dark') color = "#64b5f6";
-
-            if (!priceStr) return color;
-
-            const match = priceStr.match(/\d+/);
-            if (match) {
-                const price = parseInt(match[0], 10);
-                if (price < 1000) {
-                    return "#2e7d32"; // Bamboo Green (Cheap)
-                } else if (price >= 3000) {
-                    return "#d3381c"; // Vermilion (Expensive)
-                }
-            }
-            return color;
-        }
-
-        // Render Markers with Labels
+        // --- MAP & MARKERS ---
         function renderMarkers(data) {
-            markers.forEach(m => map.removeLayer(m));
-            markers = [];
+            markersCluster.clearLayers();
 
             data.forEach(item => {
-                const color = getMarkerColor(item.price);
-                const theme = document.body.getAttribute('data-theme');
-
-                // Adjust base color for dark mode readability if needed
-                let finalColor = color;
-                if (theme === 'dark' && color === '#1e3b79') finalColor = '#64b5f6';
+                // Determine Color
+                let color = '#FCCE02'; // Yellow default
+                let p = (item.price || "").toLowerCase();
+                if (p === 'high') color = '#FF3B30'; // Red
+                if (p === 'low') color = '#34C759'; // Green
 
                 const marker = L.circleMarker([item.lat, item.lng], {
-                    radius: 7,
-                    fillColor: finalColor,
-                    color: "#fff", // Keep white stroke for contrast
+                    radius: 8,
+                    fillColor: color,
+                    color: '#fff',
                     weight: 2,
                     opacity: 1,
-                    fillOpacity: 0.95
+                    fillOpacity: 0.9
                 });
 
-                // Add Permanent Label
+                // Add Label
                 marker.bindTooltip(item.name, {
                     permanent: true,
                     direction: 'top',
+                    offset: [0, -8],
                     className: 'map-label',
-                    offset: [0, -5]
+                    interactive: false
                 });
 
-                marker.bindPopup(createPopupContent(item));
+                // App-Style Popup
+                const gLink = item.link && item.link.startsWith('http') ? item.link :
+                    `https://www.google.com/maps/dir/?api=1&destination=${item.lat},${item.lng}&destination_place_id=${encodeURIComponent(item.name)}`;
 
-                marker.addTo(map);
-                markers.push(marker);
+                const html = `
+                    <div class="card-header" data-price="${item.price}">
+                        <div class="card-title">${item.name}</div>
+                    </div>
+                    <div class="card-body">
+                        <div class="tags">
+                            <span class="tag cat">${item.category}</span>
+                            <span class="tag price">${item.price === 'Low' ? '$' : item.price === 'High' ? '$$$' : '$$'}</span>
+                        </div>
+                        ${item.must ? `<div class="info-row must-order"><i class="fas fa-star"></i> 必點：${item.must}</div>` : ''}
+                        ${item.addr ? `<div class="info-row"><i class="fas fa-map-marker-alt"></i> ${item.addr}</div>` : ''}
+                        <div class="desc">${item.desc || "暫無簡介"}</div>
+                        <a href="${gLink}" target="_blank" class="btn-nav">
+                            <i class="fas fa-car-side"></i> 導航去這裡
+                        </a>
+                    </div>
+                `;
+
+                marker.bindPopup(html);
+                markersCluster.addLayer(marker);
             });
-
-            if (data.length > 0) {
-                const group = L.featureGroup(markers);
-                map.fitBounds(group.getBounds(), { padding: [30, 30] });
-            }
         }
 
-        function createPopupContent(item) {
-            const googleMapsLink = `https://www.google.com/maps/dir/?api=1&destination=${item.lat},${item.lng}&destination_place_id=${encodeURIComponent(item.name)}`;
-            const desc = item.description || "這是一間值得一試的好餐廳！";
-            const rec = item.recommended ? `<div class="popup-rec"><i class="fas fa-thumbs-up"></i> 必點：${item.recommended}</div>` : "";
+        function applyFilter() {
+            const activeFilter = document.querySelector('.pill.active').dataset.filter;
+            const searchVal = document.getElementById('search-input').value.toLowerCase().trim();
 
-            return `
-                <div class="popup-header">
-                    <h3>${item.name}</h3>
-                    <div class="popup-meta">
-                        <span>${item.region}</span>
-                    </div>
-                </div>
-                <div class="popup-body">
-                    <p class="popup-desc">${desc}</p>
-                    ${rec}
-                    <div class="popup-row">
-                        <i class="fas fa-utensils"></i> ${item.category}
-                    </div>
-                    <div class="popup-row">
-                        <i class="fas fa-yen-sign"></i> 
-                        <span class="popup-price">${item.price}</span>
-                    </div>
-                    <a href="${googleMapsLink}" target="_blank" class="navigate-btn">
-                        <i class="fas fa-location-arrow"></i> ここへ行く (導航)
-                    </a>
-                </div>
-            `;
-        }
-
-        // Theme Toggle Logic
-        const btnTheme = document.getElementById('btn-theme');
-        const iconTheme = btnTheme.querySelector('i');
-
-        btnTheme.addEventListener('click', () => {
-            const currentTheme = document.body.getAttribute('data-theme');
-            const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
-
-            document.body.setAttribute('data-theme', newTheme);
-
-            // Switch Icon
-            if (newTheme === 'dark') {
-                iconTheme.classList.replace('fa-moon', 'fa-sun');
-                tileLayer.setUrl(tiles.dark);
-            } else {
-                iconTheme.classList.replace('fa-sun', 'fa-moon');
-                tileLayer.setUrl(tiles.light);
-            }
-
-            const region = document.querySelector('.filter-btn.active').dataset.filter;
-            if (region === 'all') renderMarkers(restaurantsData);
-            else renderMarkers(restaurantsData.filter(i => i.region === region));
-        });
-
-        // Filter Logic
-        document.querySelectorAll('.filter-btn').forEach(btn => {
-            btn.addEventListener('click', () => {
-                document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
-                btn.classList.add('active');
-
-                const region = btn.dataset.filter;
-                if (region === 'all') {
-                    renderMarkers(restaurantsData);
-                } else {
-                    renderMarkers(restaurantsData.filter(item => item.region === region));
+            const filtered = allData.filter(d => {
+                let matchFilter = true;
+                if (activeFilter !== 'all') {
+                    if (['北部', '中部', '南部'].includes(activeFilter)) {
+                        matchFilter = d.region === activeFilter;
+                    } else {
+                        // Category filter - Loose match
+                        const cat = d.category.toLowerCase();
+                        if (activeFilter === '飯店') {
+                            matchFilter = cat.includes('飯店') || cat.includes('hotel') || cat.includes('住宿') || d.region === '飯店';
+                        } else {
+                            matchFilter = d.category === activeFilter;
+                        }
+                    }
                 }
+
+                const matchSearch = !searchVal ||
+                    d.name.toLowerCase().includes(searchVal) ||
+                    d.category.toLowerCase().includes(searchVal) ||
+                    (d.must && d.must.toLowerCase().includes(searchVal));
+
+                return matchFilter && matchSearch;
             });
-        });
 
-        // Geolocation Logic
-        const btnLocate = document.getElementById('btn-locate');
-        let userMarker = null;
+            renderMarkers(filtered);
+            updateSearchResults(filtered, searchVal);
 
-        btnLocate.addEventListener('click', () => {
-            if (!navigator.geolocation) {
-                alert('瀏覽器不支援定位功能');
+            // Auto fit bounds
+            if (filtered.length > 0 && (activeFilter !== 'all' || searchVal)) {
+                const bounds = L.latLngBounds(filtered.map(d => [d.lat, d.lng]));
+                map.fitBounds(bounds, { padding: [50, 50], maxZoom: 15 });
+            } else if (activeFilter === 'all' && !searchVal) {
+                map.setView([26.4, 127.9], 10);
+            }
+        }
+
+        function updateSearchResults(filtered, searchVal) {
+            const container = document.getElementById('search-results');
+            if (!searchVal || filtered.length === 0) {
+                container.style.display = 'none';
                 return;
             }
 
-            btnLocate.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+            container.innerHTML = filtered.slice(0, 10).map(item => {
+                const nameEsc = item.name.replace(/'/g, "\\'");
+                return `
+                <div class="search-item" onclick="selectResult(${item.lat}, ${item.lng}, '${nameEsc}')">
+                    <div class="search-item-name">${item.name}</div>
+                    <div class="search-item-meta">${item.category} · ${item.region}</div>
+                </div>
+            `}).join('');
+            container.style.display = 'block';
+        }
 
+        window.selectResult = function (lat, lng, name) {
+            map.flyTo([lat, lng], 18);
+            document.getElementById('search-results').style.display = 'none';
+            document.getElementById('search-input').value = name;
+
+            // Open popup logic
+            setTimeout(() => {
+                markersCluster.eachLayer(layer => {
+                    const latLng = layer.getLatLng();
+                    // Simple check if it matches
+                    if (Math.abs(latLng.lat - lat) < 0.00001 && Math.abs(latLng.lng - lng) < 0.00001) {
+                        markersCluster.zoomToShowLayer(layer, () => layer.openPopup());
+                    }
+                });
+            }, 500);
+        };
+
+        // --- UTILS ---
+        function removeLoading() {
+            const el = document.getElementById('loading');
+            el.style.opacity = '0';
+            setTimeout(() => el.remove(), 400);
+        }
+
+        function locateUser() {
+            if (!navigator.geolocation) return alert("不支援定位");
             navigator.geolocation.getCurrentPosition(
                 (pos) => {
-                    const lat = pos.coords.latitude;
-                    const lng = pos.coords.longitude;
-                    const acc = pos.coords.accuracy;
-
+                    const { latitude, longitude } = pos.coords;
                     if (userMarker) map.removeLayer(userMarker);
-
-                    const userIcon = L.divIcon({
-                        className: 'user-pos-marker',
-                        iconSize: [16, 16]
-                    });
-
-                    userMarker = L.marker([lat, lng], { icon: userIcon }).addTo(map);
-
-                    const themeColor = document.body.getAttribute('data-theme') === 'dark' ? '#64b5f6' : '#d3381c';
-                    L.circle([lat, lng], { radius: acc, color: themeColor, fillOpacity: 0.1 }).addTo(map);
-
-                    map.flyTo([lat, lng], 13, { duration: 1.5 });
-
-                    btnLocate.innerHTML = '<i class="fas fa-location-arrow"></i>';
+                    userMarker = L.marker([latitude, longitude], {
+                        icon: L.divIcon({ html: '<div style="width:12px;height:12px;background:#007AFF;border:2px solid #fff;border-radius:50%;box-shadow:0 0 10px rgba(0,122,255,0.5);"></div>', className: '' })
+                    }).addTo(map);
+                    map.flyTo([latitude, longitude], 13);
                 },
-                (err) => {
-                    console.error(err);
-                    alert('無法取得您的位置');
-                    btnLocate.innerHTML = '<i class="fas fa-location-arrow"></i>';
-                },
-                { enableHighAccuracy: true }
+                (err) => alert("定位失敗: " + err.message)
             );
-        });
+        }
 
-        // Run
+        // Kickoff
         initApp();
 
     </script>
