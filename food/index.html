@@ -10,55 +10,61 @@
     <!-- PWA Meta Tags -->
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <meta name="theme-color" content="#fcfaf2" media="(prefers-color-scheme: light)">
-    <meta name="theme-color" content="#0f172a" media="(prefers-color-scheme: dark)">
+    <meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)">
+    <meta name="theme-color" content="#1a1a1a" media="(prefers-color-scheme: dark)">
 
-    <!-- PWA Manifest (Data URI) -->
+    <!-- PWA Manifest -->
     <link rel="manifest"
-        href='data:application/json;charset=utf-8,%7B%22name%22%3A%22%E6%B2%96%E7%B9%A9%E7%BE%8E%E9%A3%9F%E5%9C%B0%E5%9C%96%22%2C%22short_name%22%3A%22%E6%B2%96%E7%B9%A9%E7%BE%8E%E9%A3%9F%22%2C%22start_url%22%3A%22.%2Findex.html%22%2C%22display%22%3A%22standalone%22%2C%22background_color%22%3A%22%23fcfaf2%22%2C%22theme_color%22%3A%22%231e3b79%22%2C%22icons%22%3A%5B%7B%22src%22%3A%22https%3A%2F%2Fcdn-icons-png.flaticon.com%2F512%2F662%2F662646.png%22%2C%22sizes%22%3A%22512x512%22%2C%22type%22%3A%22image%2Fpng%22%7D%5D%7D'>
+        href='data:application/json;charset=utf-8,%7B%22name%22%3A%22%E6%B2%96%E7%B9%A9%E7%BE%8E%E9%A3%9F%E5%9C%B0%E5%9C%96%22%2C%22short_name%22%3A%22%E6%B2%96%E7%B9%A9%E7%BE%8E%E9%A3%9F%22%2C%22start_url%22%3A%22.%2Findex.html%22%2C%22display%22%3A%22standalone%22%2C%22background_color%22%3A%22%23ffffff%22%2C%22theme_color%22%3A%22%23000000%22%2C%22icons%22%3A%5B%7B%22src%22%3A%22https%3A%2F%2Fcdn-icons-png.flaticon.com%2F512%2F662%2F662646.png%22%2C%22sizes%22%3A%22512x512%22%2C%22type%22%3A%22image%2Fpng%22%7D%5D%7D'>
 
-    <!-- Leaflet CSS -->
+    <!-- Leaflet & Fonts -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
         integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
-
-    <!-- Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link
-        href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700&family=Noto+Serif+TC:wght@400;600;700&display=swap"
+        href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700&family=Noto+Sans+TC:wght@400;500;700&display=swap"
         rel="stylesheet">
-
-    <!-- Font Awesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
     <style>
         :root {
-            /* Japanese Traditional Palette (Wabi-Sabi) */
-            --bg-color: #fcfaf2;
-            --text-main: #2b2b2b;
-            --text-sub: #595857;
-            --container-bg: rgba(255, 255, 255, 0.95);
-            --accent-color: #1e3b79;
-            --accent-hover: #162c5b;
-            --highlight-color: #d3381c;
-            --shadow-lg: 0 4px 20px rgba(43, 43, 43, 0.08);
-            --btn-bg: #ffffff;
-            --label-color: #2b2b2b;
-            --label-halo: #fcfaf2;
+            /* Apple HIG / iOS System Colors + Reference Theme (Yellow) */
+            --bg-color: #ffffff;
+            --surface-color: rgba(255, 255, 255, 0.95);
+            --surface-solid: #ffffff;
+            --text-primary: #000000;
+            --text-secondary: #8E8E93;
+
+            /* Reference Theme Colors */
+            --accent-color: #FCCE02;
+            /* Bright Yellow */
+            --accent-text: #000000;
+            /* Black text on Yellow */
+
+            --highlight-color: #FF3B30;
+            --success-color: #34C759;
+            --warning-color: #FF9500;
+
+            --border-radius: 16px;
+            --card-radius: 24px;
+            --shadow-sm: 0 2px 4px rgba(0, 0, 0, 0.08);
+            --shadow-float: 0 8px 32px rgba(0, 0, 0, 0.12);
+            --font-main: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            --safe-top: env(safe-area-inset-top, 20px);
+            --safe-bottom: env(safe-area-inset-bottom, 20px);
         }
 
         [data-theme="dark"] {
-            --bg-color: #0f172a;
-            --text-main: #fcfaf2;
-            --text-sub: #94a3b8;
-            --container-bg: rgba(30, 41, 59, 0.95);
-            --accent-color: #64b5f6;
-            --accent-hover: #42a5f5;
-            --highlight-color: #ff6b6b;
-            --shadow-lg: 0 10px 25px rgba(0, 0, 0, 0.5);
-            --btn-bg: #1e293b;
-            --label-color: #fcfaf2;
-            --label-halo: #0f172a;
+            --bg-color: #000000;
+            --surface-color: rgba(28, 28, 30, 0.85);
+            --surface-solid: #1C1C1E;
+            --text-primary: #FFFFFF;
+            --text-secondary: #98989D;
+            --accent-color: #FFD60A;
+            --highlight-color: #FF453A;
+            --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.3);
+            --shadow-float: 0 8px 32px rgba(0, 0, 0, 0.4);
         }
 
         * {
@@ -66,272 +72,323 @@
             margin: 0;
             padding: 0;
             -webkit-tap-highlight-color: transparent;
+            font-family: var(--font-main);
+            /* Enforce system font everywhere */
         }
 
         body {
-            font-family: 'Noto Sans TC', sans-serif;
-            color: var(--text-main);
-            overflow: hidden;
-            height: 100vh;
-            width: 100vw;
             background-color: var(--bg-color);
-            transition: background-color 0.4s ease;
+            color: var(--text-primary);
+            width: 100vw;
+            height: 100vh;
+            overflow: hidden;
+            transition: background 0.3s ease;
         }
 
         #map {
             width: 100%;
             height: 100%;
             z-index: 1;
-            background: var(--bg-color);
+            background: #f2f2f7;
+            /* iOS grouped background */
         }
 
-        /* --- Top Bar: Search & Filter --- */
-        .top-bar {
+        [data-theme="dark"] #map {
+            background: #000000;
+        }
+
+        /* --- UI Overlay --- */
+        .ui-overlay {
             position: absolute;
-            top: 20px;
-            left: 50%;
-            transform: translateX(-50%);
-            z-index: 1000;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 999;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            padding-bottom: var(--safe-bottom);
+            /* Safe area */
+        }
+
+        /* Top Bar */
+        .top-shelf {
+            pointer-events: auto;
+            padding-top: max(var(--safe-top), 16px);
+            margin: 0 16px;
             display: flex;
             flex-direction: column;
             gap: 12px;
-            width: 92vw;
-            max-width: 500px;
-            pointer-events: none;
-            /* Allow clicking map behind */
         }
 
-        .search-container {
-            pointer-events: auto;
-            background: var(--container-bg);
-            border-radius: 8px;
-            box-shadow: var(--shadow-lg);
+        .search-bar-wrap {
+            background: var(--surface-color);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            /* Safari support */
+            border-radius: 12px;
+            /* iOS Search Bar radius */
+            box-shadow: var(--shadow-sm);
             display: flex;
             align-items: center;
-            padding: 4px 12px;
-            backdrop-filter: blur(8px);
-            -webkit-backdrop-filter: blur(8px);
-            border: 1px solid rgba(0, 0, 0, 0.05);
+            padding: 8px 12px;
+            max-width: 480px;
+            /* Limit width on iPad/Desktop */
+            transition: all 0.2s ease;
+        }
+
+        .search-bar-wrap:focus-within {
+            box-shadow: var(--shadow-float);
+            transform: scale(1.01);
         }
 
         .search-icon {
-            color: var(--text-sub);
-            font-size: 1rem;
+            width: 24px;
+            height: 24px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            color: var(--text-secondary);
             margin-right: 8px;
         }
 
         #search-input {
             border: none;
             background: transparent;
-            width: 100%;
-            padding: 10px 0;
-            font-size: 1rem;
-            color: var(--text-main);
-            font-family: 'Noto Sans TC', sans-serif;
+            flex: 1;
+            padding: 4px 0;
+            font-size: 17px;
+            /* iOS Body size */
+            font-weight: 400;
+            color: var(--text-primary);
         }
 
         #search-input:focus {
             outline: none;
         }
 
-        .filter-sroll-wrap {
-            pointer-events: auto;
-            overflow-x: auto;
-            white-space: nowrap;
-            padding-bottom: 4px;
-            /* Hide scrollbar spacing */
-            -webkit-overflow-scrolling: touch;
-            scrollbar-width: none;
+        #search-input::placeholder {
+            color: var(--text-secondary);
         }
 
-        .filter-sroll-wrap::-webkit-scrollbar {
+        /* Filter Pills */
+        .filter-scroller {
+            display: flex;
+            gap: 10px;
+            overflow-x: auto;
+            padding: 4px 2px;
+            padding-bottom: 8px;
+            scrollbar-width: none;
+            -webkit-overflow-scrolling: touch;
+        }
+
+        .filter-scroller::-webkit-scrollbar {
             display: none;
         }
 
-        .filter-group {
-            display: inline-flex;
-            gap: 8px;
-            padding: 0 4px;
-        }
-
-        .filter-btn {
-            border: none;
-            background: var(--container-bg);
+        .filter-pill {
+            background: var(--surface-color);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            color: var(--text-primary);
             padding: 8px 16px;
-            border-radius: 20px;
+            border-radius: 18px;
+            /* Classic iOS pill */
+            font-size: 15px;
+            font-weight: 500;
+            box-shadow: var(--shadow-sm);
+            white-space: nowrap;
             cursor: pointer;
-            font-size: 0.9rem;
-            font-weight: 700;
-            color: var(--text-main);
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
-            /* Separate shadow for each */
             transition: all 0.2s ease;
-            font-family: 'Noto Serif TC', serif;
+            border: 0.5px solid rgba(0, 0, 0, 0.05);
         }
 
-        .filter-btn.active {
+        [data-theme="dark"] .filter-pill {
+            border: 0.5px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .filter-pill.active {
             background: var(--accent-color);
-            color: #fff !important;
+            color: var(--accent-text);
+            border-color: transparent;
+            font-weight: 700;
+            transform: scale(1.02);
+            box-shadow: 0 4px 12px rgba(252, 206, 2, 0.4);
+            /* Yellow Glow */
         }
 
-        [data-theme="dark"] .filter-btn.active {
-            color: #0f172a !important;
-        }
-
-        /* --- Floating Controls --- */
-        .controls-container {
+        /* Floating Actions */
+        .fab-stack {
             position: absolute;
-            bottom: 36px;
+            bottom: calc(var(--safe-bottom) + 20px);
             right: 20px;
-            z-index: 1000;
             display: flex;
             flex-direction: column;
             gap: 16px;
+            pointer-events: auto;
         }
 
-        .float-btn {
-            width: 56px;
-            height: 56px;
-            background: var(--btn-bg);
-            border-radius: 12px;
-            border: 1px solid rgba(0, 0, 0, 0.1);
-            box-shadow: var(--shadow-lg);
-            cursor: pointer;
+        .fab {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            background: var(--surface-color);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            color: var(--text-primary);
+            /* Default icon color */
+            border: none;
+            box-shadow: var(--shadow-float);
             display: flex;
             justify-content: center;
             align-items: center;
-            font-size: 1.25rem;
-            color: var(--text-main);
-            transition: all 0.2s ease;
+            font-size: 20px;
+            cursor: pointer;
+            transition: transform 0.2s, background 0.2s;
         }
 
-        .float-btn:hover {
-            transform: translateY(-2px);
-            color: var(--accent-color);
+        .fab:active {
+            transform: scale(0.92);
+            filter: brightness(0.95);
         }
 
-        /* --- Popup & Distance --- */
+        .fab.primary {
+            background: var(--accent-color);
+            color: var(--accent-text);
+        }
+
+        /* Custom Popup Style */
         .leaflet-popup-content-wrapper {
-            border-radius: 4px;
-            box-shadow: var(--shadow-lg);
+            border-radius: var(--card-radius);
             padding: 0;
-            background: var(--btn-bg);
-            color: var(--text-main);
+            background: var(--surface-solid);
+            box-shadow: var(--shadow-float);
+            color: var(--text-primary);
+            overflow: hidden;
         }
 
         .leaflet-popup-tip {
-            background: var(--btn-bg);
+            background: var(--surface-solid);
         }
 
-        .leaflet-popup-content {
-            margin: 0;
-            width: 300px !important;
-            max-width: 88vw;
+        .leaflet-container a.leaflet-popup-close-button {
+            padding: 8px;
+            color: rgba(255, 255, 255, 0.8);
+            font-size: 18px;
+            top: 4px;
+            right: 4px;
+            z-index: 10;
+            text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
         }
 
-        .popup-header {
-            border-bottom: 2px solid var(--accent-color);
-            padding: 20px 20px 12px 20px;
+        .custom-popup-content {
+            width: 280px !important;
         }
 
-        .popup-header h3 {
-            font-size: 1.3rem;
-            margin: 0 0 4px 0;
+        .popup-hero {
+            height: 120px;
+            background: linear-gradient(135deg, #a8edea 0%, #fed6e3 100%);
+            /* Default Gradient */
+            display: flex;
+            align-items: flex-end;
+            padding: 16px;
+            box-sizing: border-box;
+            position: relative;
+        }
+
+        /* iOS-like Gradients */
+        .popup-hero[data-price="High"] {
+            background: linear-gradient(135deg, #FF9A9E 0%, #FECFEF 99%, #FECFEF 100%);
+        }
+
+        /* Red-ish */
+        .popup-hero[data-price="Low"] {
+            background: linear-gradient(120deg, #d4fc79 0%, #96e6a1 100%);
+        }
+
+        /* Green-ish */
+
+        .popup-title {
+            color: #fff;
+            text-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+            font-size: 20px;
             font-weight: 700;
-            font-family: 'Noto Serif TC', serif;
-            color: var(--accent-color);
+            line-height: 1.1;
+            z-index: 2;
         }
 
-        .popup-meta {
+        .popup-details {
+            padding: 16px;
+        }
+
+        .tag-row {
             display: flex;
-            justify-content: space-between;
-            align-items: center;
-            font-size: 0.85rem;
-            color: var(--text-sub);
-        }
-
-        .distance-badge {
-            background: rgba(0, 0, 0, 0.05);
-            padding: 2px 6px;
-            border-radius: 4px;
-            font-weight: 500;
-            font-size: 0.8rem;
-        }
-
-        .popup-body {
-            padding: 16px 20px 24px 20px;
-        }
-
-        .popup-desc {
-            font-size: 0.95rem;
-            line-height: 1.6;
-            margin-bottom: 12px;
-            opacity: 0.9;
-        }
-
-        .popup-rec {
-            font-size: 0.95rem;
-            margin-bottom: 12px;
-            color: var(--highlight-color);
-            font-weight: 600;
-            display: flex;
-            align-items: flex-start;
             gap: 8px;
+            margin-bottom: 12px;
+            flex-wrap: wrap;
         }
 
-        .popup-row {
-            display: flex;
-            align-items: center;
-            margin-bottom: 8px;
-            color: var(--text-sub);
-        }
-
-        .popup-row i {
-            width: 24px;
-            text-align: center;
-            margin-right: 12px;
-            font-size: 0.9em;
-        }
-
-        .popup-price {
-            font-family: 'Noto Serif TC', serif;
+        .tag {
+            font-size: 12px;
+            padding: 4px 10px;
+            border-radius: 100px;
             font-weight: 600;
-            color: var(--text-main);
+            text-transform: uppercase;
+            background: rgba(142, 142, 147, 0.1);
+            color: var(--text-secondary);
+            line-height: 1;
         }
 
-        .navigate-btn {
+        .tag.price {
+            color: var(--highlight-color);
+            background: rgba(255, 59, 48, 0.1);
+        }
+
+        .tag.dist {
+            color: var(--accent-color);
+            background: rgba(0, 122, 255, 0.1);
+        }
+
+        .desc-text {
+            font-size: 15px;
+            line-height: 1.4;
+            color: var(--text-primary);
+            margin-bottom: 20px;
+            opacity: 0.85;
+            display: -webkit-box;
+            -webkit-line-clamp: 3;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+
+        .action-btn {
             display: flex;
             justify-content: center;
             align-items: center;
+            gap: 8px;
             width: 100%;
-            background: var(--highlight-color);
-            color: #fff;
             padding: 14px;
-            border-radius: 4px;
+            background: var(--accent-color);
+            /* GO! Button Yellow */
+            color: var(--accent-text);
+            border-radius: 30px;
+            /* Pill shape for button */
             text-decoration: none;
-            font-weight: 500;
-            margin-top: 16px;
-            box-shadow: 0 2px 8px rgba(211, 56, 28, 0.3);
+            font-weight: 800;
+            font-size: 16px;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+            transition: opacity 0.2s, transform 0.1s;
         }
 
-        [data-theme="dark"] .navigate-btn {
-            color: #fff;
-            box-shadow: 0 2px 8px rgba(255, 107, 107, 0.3);
+        .action-btn:active {
+            opacity: 0.9;
+            transform: scale(0.98);
         }
 
-        /* Map Labels */
-        .map-label {
-            background: transparent;
-            border: none;
-            box-shadow: none;
-            font-size: 13px;
-            font-weight: 700;
-            font-family: 'Noto Serif TC', serif;
-            color: var(--label-color);
-            text-shadow: 2px 0 var(--label-halo), -2px 0 var(--label-halo), 0 2px var(--label-halo), 0 -2px var(--label-halo);
-        }
 
-        /* Loading */
+        /* Loading Screen */
         #loading {
             position: fixed;
             top: 0;
@@ -341,207 +398,276 @@
             background: var(--bg-color);
             z-index: 9999;
             display: flex;
+            flex-direction: column;
             justify-content: center;
             align-items: center;
-            flex-direction: column;
-            transition: opacity 0.6s ease;
+            transition: opacity 0.5s ease;
         }
 
-        .spinner {
-            width: 40px;
-            height: 40px;
-            border: 3px solid rgba(0, 0, 0, 0.1);
-            border-top: 3px solid var(--accent-color);
+        .loader-dot {
+            width: 60px;
+            height: 60px;
+            border: 4px solid rgba(0, 0, 0, 0.05);
+            border-left-color: var(--accent-color);
             border-radius: 50%;
-            animation: spin 1s infinite;
+            animation: spin 0.8s linear infinite;
         }
 
         @keyframes spin {
-            0% {
-                transform: rotate(0deg);
-            }
-
             100% {
                 transform: rotate(360deg);
             }
         }
 
-        .user-pos-marker {
-            background: var(--highlight-color);
-            border: 2px solid #fff;
-            border-radius: 50%;
-            box-shadow: 0 0 0 4px rgba(211, 56, 28, 0.2);
-            width: 16px;
-            height: 16px;
+        /* Marker Labels */
+        .map-label {
+            background: var(--surface-color);
+            border: none;
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+            border-radius: 6px;
+            padding: 2px 6px;
+            font-size: 12px;
+            font-weight: 700;
+            color: var(--text-primary);
+            white-space: nowrap;
+        }
+
+        [data-theme="dark"] .map-label {
+            background: var(--surface-color);
+            color: var(--text-primary);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .leaflet-circle-marker {
+            transition: r 0.3s ease;
         }
     </style>
 </head>
 
 <body>
 
+    <!-- Loading Screen -->
     <div id="loading">
-        <div class="spinner"></div>
-        <p style="margin-top:20px;color:var(--text-sub);font-family:'Noto Serif TC',serif;">読み込み中...</p>
+        <div class="loader-dot"></div>
+        <p style="margin-top:20px; font-weight:500; opacity:0.6;">Loading Map...</p>
     </div>
 
-    <div class="top-bar">
-        <!-- Search Bar -->
-        <div class="search-container">
-            <i class="fas fa-search search-icon"></i>
-            <input type="text" id="search-input" placeholder="搜尋餐廳..." autocomplete="off">
-        </div>
-
-        <!-- Filters -->
-        <div class="filter-sroll-wrap">
-            <div class="filter-group">
-                <button class="filter-btn active" data-filter="all">全部</button>
-                <button class="filter-btn" data-filter="北部">北部</button>
-                <button class="filter-btn" data-filter="中部">中部</button>
-                <button class="filter-btn" data-filter="南部">南部</button>
-            </div>
-        </div>
-    </div>
-
-    <!-- Map -->
+    <!-- Map Container -->
     <div id="map"></div>
 
-    <!-- Controls -->
-    <div class="controls-container">
-        <button class="float-btn" id="btn-theme"><i class="fas fa-moon"></i></button>
-        <button class="float-btn" id="btn-locate"><i class="fas fa-location-arrow"></i></button>
+    <!-- UI Overlay -->
+    <div class="ui-overlay">
+
+        <!-- Top Controls -->
+        <div class="top-shelf">
+            <div class="search-bar-wrap">
+                <div class="search-icon"><i class="fas fa-search"></i></div>
+                <input type="text" id="search-input" placeholder="Find Ramen, Sushi..." autocomplete="off">
+            </div>
+
+            <div class="filter-scroller">
+                <div class="filter-pill active" data-filter="all">全部</div>
+                <div class="filter-pill" data-filter="北部">北部</div>
+                <div class="filter-pill" data-filter="中部">中部</div>
+                <div class="filter-pill" data-filter="南部">南部</div>
+            </div>
+        </div>
+
+        <!-- FABs -->
+        <div class="fab-stack">
+            <button class="fab" id="btn-theme"><i class="fas fa-moon"></i></button>
+            <button class="fab primary" id="btn-locate"><i class="fas fa-location-arrow"></i></button>
+        </div>
     </div>
 
+    <!-- Scripts -->
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
         integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
 
     <script>
-        // Data Source (JSONP URL)
-        const SHEET_JSONP_URL = 'https://docs.google.com/spreadsheets/d/1igtQX_K3H24gSYxyh6zeridz4pbYVRTCJYTpCdCRnF4/gviz/tq?tqx=out:json&tq&callback=googleSheetCallback';
+        // --- 1. CONFIG & SHIMS ---
 
-        // Logic
-        const map = L.map('map', { zoomControl: false }).setView([26.4, 127.9], 9);
-        L.control.zoom({ position: 'topright' }).addTo(map);
+        // Correct JSONP URL with responseHandler
+        const SHEET_JSONP_URL = 'https://docs.google.com/spreadsheets/d/1igtQX_K3H24gSYxyh6zeridz4pbYVRTCJYTpCdCRnF4/gviz/tq?tqx=responseHandler:googleSheetCallback';
+
+        // Shim to catch default google callback if parameters fail
+        window.google = window.google || {};
+        window.google.visualization = window.google.visualization || {};
+        window.google.visualization.Query = window.google.visualization.Query || {};
+        window.google.visualization.Query.setResponse = function (json) {
+            handleData(json);
+        };
+
+        // --- 2. APP LOGIC ---
+
+        const map = L.map('map', { zoomControl: false, tap: false }).setView([26.4, 127.9], 9);
+        // L.control.zoom({ position: 'bottomright' }).addTo(map); // Optional: Zoom controls
 
         const tiles = {
             light: 'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png',
             dark: 'https://{s}.basemaps.cartocdn.com/rastertiles/dark_all/{z}/{x}/{y}{r}.png'
         };
-        let tileLayer = L.tileLayer(tiles.light, { attribution: '© OpenStreetMap © CARTO', maxZoom: 20 }).addTo(map);
+        let tileLayer = L.tileLayer(tiles.light, {
+            attribution: '&copy; OpenStreetMap &copy; CARTO',
+            maxZoom: 20
+        }).addTo(map);
 
         let restaurantsData = [];
         let markers = [];
-        let userLat = null;
-        let userLng = null;
-        let userMarker = null;
+        let userLat = null, userLng = null, userMarker = null;
 
         function initApp() {
-            // Fetch Data via JSONP (Bypasses CORS)
+            // Inject Script with Cache Buster
             const script = document.createElement('script');
-            script.src = SHEET_JSONP_URL;
-            script.onerror = function () {
-                showError("無法連線到 Google Sheet");
-            };
+            script.src = SHEET_JSONP_URL + '&_=' + Date.now();
+            script.onerror = () => showError("Connection Failed. Blocked by Browser or Network.");
             document.body.appendChild(script);
 
-            // Try to get location silently for distance calc
+            // Geolocation
             if (navigator.geolocation) {
                 navigator.geolocation.getCurrentPosition(
-                    (pos) => {
-                        userLat = pos.coords.latitude;
-                        userLng = pos.coords.longitude;
-                    },
-                    () => { },
-                    { enableHighAccuracy: false, timeout: 5000 }
+                    (pos) => { userLat = pos.coords.latitude; userLng = pos.coords.longitude; },
+                    (err) => console.log("Loc error", err),
+                    { timeout: 5000 }
                 );
             }
         }
 
-        // Global Callback for Google Sheet JSONP
+        // Global Callback
         window.googleSheetCallback = function (json) {
+            handleData(json);
+        };
+
+        function handleData(json) {
             if (!json || !json.table || !json.table.rows) {
-                showError("讀取到的資料格式錯誤");
+                showError("Invalid Data Format");
                 return;
             }
 
-            // Columns Order based on Sheet: 
-            // 0:Region, 1:Name, 2:Category, 3:Price, 4:Address, 5:GMap_Link, 6:Notes, 7:Lat, 8:Lng
-            const rows = json.table.rows;
+            // Dynamic Column Mapping
+            const cols = json.table.cols;
+            const colMap = {};
+            cols.forEach((col, index) => {
+                if (col && col.label) {
+                    colMap[col.label.toLowerCase().trim()] = index;
+                }
+            });
 
+            // Helper to get index by multiple possible names
+            const getIdx = (...names) => {
+                for (let n of names) {
+                    if (colMap[n.toLowerCase()] !== undefined) return colMap[n.toLowerCase()];
+                }
+                return -1;
+            };
+
+            const idx = {
+                region: getIdx('region', '地區'),
+                name: getIdx('name', '店名'),
+                category: getIdx('category', '分類'),
+                price: getIdx('price', '價格'),
+                mustOrder: getIdx('must_order', '必點', 'recommended'),
+                desc: getIdx('description', '簡介', 'notes', '備註'),
+                addr: getIdx('address', '地址'),
+                link: getIdx('gmap_link', '連結', 'google map'),
+                lat: getIdx('lat', '緯度'),
+                lng: getIdx('lng', '經度')
+            };
+
+            const rows = json.table.rows;
             restaurantsData = rows.map(r => {
                 const c = r.c;
                 if (!c) return null;
+                const v = (i) => (i >= 0 && c[i] && c[i].v !== null) ? String(c[i].v).trim() : "";
 
-                // Helper to get value safely
-                const v = (i) => (c[i] && c[i].v !== null) ? String(c[i].v) : "";
-                const num = (i) => (c[i] && c[i].v !== null) ? parseFloat(c[i].v) : null;
+                // Content-based heuristic for Lat/Lng
+                // Okinawa is roughly Lat 26.x, Lng 127.x
+                let lat = null;
+                let lng = null;
 
-                // Essential validation
-                const name = v(1);
-                const lat = num(7);
-                const lng = num(8);
+                // Scan all columns for potential coordinates
+                c.forEach(cell => {
+                    if (cell && typeof cell.v === 'number') {
+                        const val = cell.v;
+                        if (val > 24 && val < 28) lat = val;
+                        if (val > 126 && val < 130) lng = val;
+                    }
+                });
 
-                if (!name || lat === null || lng === null) return null;
+                // Fallback: If still null, try mapped indices but check value range
+                if (lat === null) {
+                    const val = (idx.lat >= 0 && c[idx.lat]) ? parseFloat(c[idx.lat].v) : null;
+                    if (val && val > 20 && val < 50) lat = val;
+                }
+                if (lng === null) {
+                    const val = (idx.lng >= 0 && c[idx.lng]) ? parseFloat(c[idx.lng].v) : null;
+                    if (val && val > 120 && val < 150) lng = val;
+                }
+
+                // Name is essential
+                const name = v(idx.name);
+                if (!name || !lat || !lng) return null;
+
+                // Validate Text Fields
+                let address = v(idx.addr);
+                let link = v(idx.link);
+                let desc = v(idx.desc) || v(idx.notes); // Combined fallback
+
+                // Clean up merged text fields (simple heuristics)
+                // If address is essentially the same as description or name, ignore it
+                if (address === desc || address === name) address = "";
+
+                // If address looks like description (no digits/keywords), merge to desc
+                if (address && !/[0-9市區町號]/.test(address) && address.length > 6) {
+                    // check if desc already contains it to avoid duplication
+                    if (!desc.includes(address)) desc += (" " + address);
+                    address = "";
+                }
+
+                // If link is not http, it's probably text
+                if (link && !link.startsWith('http')) {
+                    if (!desc.includes(link)) desc += (" " + link);
+                    link = "";
+                }
 
                 return {
-                    region: v(0),
+                    region: v(idx.region),
                     name: name,
-                    category: v(2),
-                    price: v(3), // Low, Medium, High
-                    address: v(4),
-                    gmapLink: v(5),
-                    description: v(6), // Notes
+                    category: v(idx.category),
+                    price: v(idx.price),
+                    mustOrder: v(idx.mustOrder),
+                    description: desc,
+                    address: address,
+                    gmapLink: link,
                     lat: lat,
-                    lng: lng,
-                    recommended: ""
+                    lng: lng
                 };
-            }).filter(item => item !== null);
+            }).filter(i => i !== null);
+
+            if (restaurantsData.length === 0) {
+                showError("No valid data found.");
+                return;
+            }
 
             renderMarkers(restaurantsData);
 
-            // Success: Remove loading
-            const loading = document.getElementById('loading');
-            if (loading) {
-                loading.style.opacity = '0';
-                setTimeout(() => loading.remove(), 500);
+            // Hide Loader
+            const loader = document.getElementById('loading');
+            if (loader) {
+                loader.style.opacity = '0';
+                setTimeout(() => loader.remove(), 500);
             }
-        };
+        }
 
         function showError(msg) {
             console.error(msg);
             document.getElementById('loading').innerHTML = `
-                <div style="text-align:center; padding: 20px;">
-                    <i class="fas fa-exclamation-triangle" style="font-size: 48px; color: var(--highlight-color); margin-bottom: 20px;"></i>
-                    <p>${msg}</p>
-                    <p style="font-size: 0.8rem; opacity: 0.7; margin-top: 10px;">請確認網路連線。</p>
-                    <button onclick="location.reload()" style="margin-top: 20px; padding: 8px 16px; border: 1px solid var(--text-main); background: transparent; border-radius: 4px; cursor: pointer;">重試</button>
+                <div style="text-align:center; padding: 24px;">
+                   <i class="fas fa-bug" style="font-size:48px; margin-bottom:16px;"></i>
+                   <p>${msg}</p>
+                   <button onclick="location.reload()" style="margin-top:16px; padding:8px 16px; cursor:pointer;">Retry</button>
                 </div>
             `;
-        }
-
-        // Haversine Distance
-        function calculateDistance(lat1, lon1, lat2, lon2) {
-            const R = 6371; // km
-            const dLat = (lat2 - lat1) * Math.PI / 180;
-            const dLon = (lon2 - lon1) * Math.PI / 180;
-            const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-                Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
-                Math.sin(dLon / 2) * Math.sin(dLon / 2);
-            const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-            return (R * c).toFixed(1);
-        }
-
-        function getMarkerColor(price) {
-            let color = "#1e3b79";
-            if (document.body.getAttribute('data-theme') === 'dark') color = "#64b5f6";
-
-            if (!price) return color;
-
-            const p = price.toLowerCase().trim();
-            if (p === 'low') return "#2e7d32";      // Cheap - Bamboo Green
-            if (p === 'medium') return color;       // Medium - Default Blue
-            if (p === 'high') return "#d3381c";     // Expensive - Vermilion
-
-            return color;
         }
 
         function renderMarkers(data) {
@@ -550,109 +676,122 @@
 
             data.forEach(item => {
                 const color = getMarkerColor(item.price);
-                const theme = document.body.getAttribute('data-theme');
-                let finalColor = color;
-                if (theme === 'dark' && color === '#1e3b79') finalColor = '#64b5f6';
+                const isDark = document.body.getAttribute('data-theme') === 'dark';
+
+                // Color tweaks for dark mode contrast
+                const finalColor = (isDark && color === '#1e3b79') ? '#64b5f6' : color;
 
                 const marker = L.circleMarker([item.lat, item.lng], {
-                    radius: 7, fillColor: finalColor, color: "#fff",
-                    weight: 2, opacity: 1, fillOpacity: 0.95
+                    radius: 8,
+                    fillColor: finalColor,
+                    color: "#ffffff",
+                    weight: 2,
+                    opacity: 1,
+                    fillOpacity: 1
                 });
 
                 marker.bindTooltip(item.name, {
-                    permanent: true, direction: 'top', className: 'map-label', offset: [0, -5]
+                    permanent: true, direction: 'top',
+                    className: 'map-label', offset: [0, -8]
                 });
 
-                marker.bindPopup(() => createPopupContent(item)); // Lazy init for distance
+                marker.bindPopup(() => createPopup(item));
                 marker.addTo(map);
                 markers.push(marker);
             });
 
-            // Adjust bounds if data loaded
             if (data.length > 0) {
                 const group = L.featureGroup(markers);
-                map.fitBounds(group.getBounds(), { padding: [30, 30] });
+                map.fitBounds(group.getBounds(), { padding: [20, 20] });
             }
         }
 
-        function createPopupContent(item) {
-            // Use GMap_Link if provided, else fallback to generic link
-            const googleMapsLink = item.gmapLink ? item.gmapLink : `https://www.google.com/maps/dir/?api=1&destination=${item.lat},${item.lng}&destination_place_id=${encodeURIComponent(item.name)}`;
-            const desc = item.description || "這是一間值得一試的好餐廳！";
-            const rec = item.recommended ? `<div class="popup-rec"><i class="fas fa-thumbs-up"></i> 必點：${item.recommended}</div>` : "";
-            const addr = item.address ? `<div class="popup-row" style="font-size:0.8rem; margin-top:4px;"><i class="fas fa-map-marker-alt"></i> ${item.address}</div>` : "";
+        function createPopup(item) {
+            const gLink = item.gmapLink || `https://www.google.com/maps/dir/?api=1&destination=${item.lat},${item.lng}&destination_place_id=${encodeURIComponent(item.name)}`;
 
-            let distHtml = "";
-            if (userLat && userLng) {
-                const dist = calculateDistance(userLat, userLng, item.lat, item.lng);
-                distHtml = `<span class="distance-badge">${dist} km</span>`;
-            }
-
-            // Price Display Text
-            let priceDisplay = item.price;
-            if (item.price === 'Low') priceDisplay = '¥1000↓';
-            if (item.price === 'Medium') priceDisplay = '¥1000-3000';
-            if (item.price === 'High') priceDisplay = '¥3000↑';
+            const dist = (userLat && userLng)
+                ? calculateDistance(userLat, userLng, item.lat, item.lng) + " km"
+                : "";
 
             return `
-                <div class="popup-header">
-                    <h3>${item.name}</h3>
-                    <div class="popup-meta">
-                        <span>${item.region}</span>
-                        ${distHtml}
+                <div class="custom-popup-content">
+                    <div class="popup-hero" data-price="${item.price}">
+                        <div class="popup-title">${item.name}</div>
                     </div>
-                </div>
-                <div class="popup-body">
-                    <p class="popup-desc">${desc}</p>
-                    ${rec}
-                    <div class="popup-row"><i class="fas fa-utensils"></i> ${item.category}</div>
-                    <div class="popup-row"><i class="fas fa-yen-sign"></i> <span class="popup-price">${priceDisplay}</span></div>
-                    ${addr}
-                    <a href="${googleMapsLink}" target="_blank" class="navigate-btn">
-                        <i class="fas fa-location-arrow"></i> 導航 (Google Maps)
-                    </a>
+                    <div class="popup-details">
+                        <div class="tag-row">
+                            <span class="tag">${item.category}</span>
+                            <span class="tag price">${item.price === 'Low' ? '$' : item.price === 'High' ? '$$$' : '$$'}</span>
+                            ${dist ? `<span class="tag dist"><i class="fas fa-walking"></i> ${dist}</span>` : ''}
+                        </div>
+                        <p class="desc-text">${item.description || "No description available."}</p>
+                        ${item.mustOrder ? `<div style="font-size:13px; color:var(--highlight-color); margin-bottom:8px; font-weight:500;"><i class="fas fa-thumbs-up"></i> 必點：${item.mustOrder}</div>` : ''}
+                        ${item.address ? `<div style="font-size:12px; color:var(--text-secondary); margin-bottom:12px;"><i class="fas fa-map-pin"></i> ${item.address}</div>` : ''}
+                        <a href="${gLink}" target="_blank" class="action-btn">
+                            Navigate
+                        </a>
+                    </div>
                 </div>
             `;
         }
 
+        // --- UTILS ---
+        function calculateDistance(lat1, lon1, lat2, lon2) {
+            const R = 6371;
+            const dLat = (lat2 - lat1) * Math.PI / 180;
+            const dLon = (lon2 - lon1) * Math.PI / 180;
+            const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+                Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+                Math.sin(dLon / 2) * Math.sin(dLon / 2);
+            return (R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))).toFixed(1);
+        }
+        function getMarkerColor(price) {
+            const p = (price || "").toLowerCase().trim();
+            if (p === 'low') return "#34C759"; // Green
+            if (p === 'high') return "#FF3B30"; // Red
+            return "#FCCE02"; // Yellow (Default/Medium)
+        }   // --- INTERACTIONS ---
+
         // Search
-        const searchInput = document.getElementById('search-input');
-        searchInput.addEventListener('input', (e) => {
-            const term = e.target.value.toLowerCase();
-            if (!term) {
-                filterByRegion(document.querySelector('.filter-btn.active').dataset.filter);
-                return;
-            }
-            const filtered = restaurantsData.filter(item =>
-                item.name.toLowerCase().includes(term) ||
-                item.category.toLowerCase().includes(term) ||
-                (item.recommended && item.recommended.includes(term))
-            );
+        document.getElementById('search-input').addEventListener('input', (e) => {
+            const val = e.target.value.toLowerCase();
+            const activeRegion = document.querySelector('.filter-pill.active').dataset.filter;
+
+            const filtered = restaurantsData.filter(d => {
+                const matchSearch = d.name.toLowerCase().includes(val) || d.category.toLowerCase().includes(val);
+                const matchRegion = activeRegion === 'all' || d.region === activeRegion;
+                return matchSearch && matchRegion;
+            });
             renderMarkers(filtered);
             if (filtered.length === 1) map.panTo([filtered[0].lat, filtered[0].lng]);
         });
 
-        // Filters
-        function filterByRegion(region) {
-            if (region === 'all') renderMarkers(restaurantsData);
-            else renderMarkers(restaurantsData.filter(item => item.region === region));
-        }
+        // Filter Pills
+        document.querySelectorAll('.filter-pill').forEach(pill => {
+            pill.addEventListener('click', () => {
+                document.querySelectorAll('.filter-pill').forEach(p => p.classList.remove('active'));
+                pill.classList.add('active');
 
-        document.querySelectorAll('.filter-btn').forEach(btn => {
-            btn.addEventListener('click', () => {
-                document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
-                btn.classList.add('active');
-                searchInput.value = ''; // clear search on filter change
-                filterByRegion(btn.dataset.filter);
+                const region = pill.dataset.filter;
+                // Reuse search logic to keep consistence
+                const searchVal = document.getElementById('search-input').value.toLowerCase();
+
+                const filtered = restaurantsData.filter(d => {
+                    const matchRegion = region === 'all' || d.region === region;
+                    const matchSearch = !searchVal || d.name.toLowerCase().includes(searchVal);
+                    return matchRegion && matchSearch;
+                });
+                renderMarkers(filtered);
             });
         });
 
-        // Theme
+        // Toggle Theme
         const btnTheme = document.getElementById('btn-theme');
         btnTheme.addEventListener('click', () => {
             const current = document.body.getAttribute('data-theme');
             const next = current === 'dark' ? 'light' : 'dark';
             document.body.setAttribute('data-theme', next);
+
             if (next === 'dark') {
                 btnTheme.innerHTML = '<i class="fas fa-sun"></i>';
                 tileLayer.setUrl(tiles.dark);
@@ -660,35 +799,24 @@
                 btnTheme.innerHTML = '<i class="fas fa-moon"></i>';
                 tileLayer.setUrl(tiles.light);
             }
-            // Re-render to update colors
-            const activeBtn = document.querySelector('.filter-btn.active');
-            if (activeBtn) filterByRegion(activeBtn.dataset.filter);
+            // Re-render markers for color update
+            renderMarkers(restaurantsData.length ? restaurantsData : []);
         });
 
-        // Location
-        const btnLocate = document.getElementById('btn-locate');
-        btnLocate.addEventListener('click', () => {
-            if (!navigator.geolocation) { alert('不支援定位'); return; }
-            btnLocate.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
-            navigator.geolocation.getCurrentPosition((pos) => {
-                userLat = pos.coords.latitude;
-                userLng = pos.coords.longitude;
-                const acc = pos.coords.accuracy;
+        // Locate User
+        document.getElementById('btn-locate').addEventListener('click', () => {
+            if (!navigator.geolocation) return alert("Geolocation not supported");
+            navigator.geolocation.getCurrentPosition(pos => {
+                const { latitude, longitude, accuracy } = pos.coords;
+                userLat = latitude; userLng = longitude;
 
                 if (userMarker) map.removeLayer(userMarker);
-                const userIcon = L.divIcon({ className: 'user-pos-marker', iconSize: [16, 16] });
-                userMarker = L.marker([userLat, userLng], { icon: userIcon }).addTo(map);
+                userMarker = L.marker([latitude, longitude]).addTo(map);
 
-                L.circle([userLat, userLng], { radius: acc, color: '#d3381c', fillOpacity: 0.1 }).addTo(map);
-                map.flyTo([userLat, userLng], 13);
-                btnLocate.innerHTML = '<i class="fas fa-location-arrow"></i>';
-
-                // Refresh to show distance
-                filterByRegion(document.querySelector('.filter-btn.active').dataset.filter);
-            }, () => {
-                alert('無法定位');
-                btnLocate.innerHTML = '<i class="fas fa-location-arrow"></i>';
-            }, { enableHighAccuracy: true });
+                map.flyTo([latitude, longitude], 13);
+                // Refresh popups to show distance
+                renderMarkers(restaurantsData);
+            });
         });
 
         initApp();
