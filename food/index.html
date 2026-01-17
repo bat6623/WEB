@@ -1,0 +1,1093 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>沖繩美食地圖 | Okinawa Food Guide</title>
+
+    <!-- Leaflet CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+        integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
+
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700&family=Outfit:wght@300;400;600&display=swap"
+        rel="stylesheet">
+
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <style>
+        :root {
+            /* Light Theme (Default) */
+            --bg-color: #eef2f3;
+            --text-main: #2c3e50;
+            --text-sub: #546e7a;
+            --container-bg: rgba(255, 255, 255, 0.95);
+            --accent-color: #3498db;
+            --accent-hover: #2980b9;
+            --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+            --btn-bg: #ffffff;
+            --map-overlay-bg: linear-gradient(135deg, #3498db 0%, #2980b9 100%);
+
+            /* Label Styles */
+            --label-color: #2c3e50;
+            --label-halo: #ffffff;
+        }
+
+        [data-theme="dark"] {
+            /* Dark Theme High Contrast */
+            --bg-color: #1a1a1a;
+            --text-main: #ffffff;
+            --text-sub: #e0e0e0;
+            --container-bg: rgba(45, 45, 45, 0.95);
+            --accent-color: #64b5f6;
+            /* Bright Blue */
+            --accent-hover: #42a5f5;
+            --shadow-lg: 0 10px 20px rgba(0, 0, 0, 0.6), 0 6px 6px rgba(0, 0, 0, 0.4);
+            --btn-bg: #333333;
+            --map-overlay-bg: linear-gradient(135deg, #1565c0 0%, #0d47a1 100%);
+
+            /* Label Styles Dark */
+            --label-color: #ffffff;
+            --label-halo: #000000;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            font-family: 'Outfit', 'Noto Sans TC', sans-serif;
+            color: var(--text-main);
+            overflow: hidden;
+            height: 100vh;
+            width: 100vw;
+            background-color: var(--bg-color);
+            transition: background-color 0.3s ease, color 0.3s ease;
+        }
+
+        /* Full Screen Map */
+        #map {
+            width: 100%;
+            height: 100%;
+            z-index: 1;
+            background: var(--bg-color);
+        }
+
+        /* UI Controls Container */
+        .filter-container {
+            position: absolute;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 1000;
+            background: var(--container-bg);
+            padding: 8px;
+            border-radius: 50px;
+            box-shadow: var(--shadow-lg);
+            display: flex;
+            gap: 8px;
+            white-space: nowrap;
+            overflow-x: auto;
+            max-width: 90vw;
+            backdrop-filter: blur(5px);
+            -webkit-backdrop-filter: blur(5px);
+            transition: background 0.3s ease;
+        }
+
+        .filter-btn {
+            border: none;
+            background: transparent;
+            padding: 8px 16px;
+            border-radius: 20px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            font-weight: 500;
+            color: var(--text-sub);
+            transition: all 0.2s ease;
+            white-space: nowrap;
+        }
+
+        .filter-btn.active {
+            background: var(--accent-color);
+            color: #fff;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.2);
+        }
+
+        [data-theme="dark"] .filter-btn.active {
+            color: #121212;
+            background: var(--accent-color);
+        }
+
+        /* Floating Buttons (Bottom Right) */
+        .controls-container {
+            position: absolute;
+            bottom: 30px;
+            right: 20px;
+            z-index: 1000;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        .float-btn {
+            width: 56px;
+            height: 56px;
+            background: var(--btn-bg);
+            border-radius: 50%;
+            border: none;
+            box-shadow: var(--shadow-lg);
+            cursor: pointer;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 1.2rem;
+            color: var(--text-sub);
+            transition: all 0.2s ease;
+        }
+
+        .float-btn:hover {
+            transform: translateY(-2px);
+            color: var(--accent-color);
+        }
+
+        /* Popup Styling */
+        .leaflet-popup-content-wrapper {
+            border-radius: 12px;
+            box-shadow: var(--shadow-lg);
+            padding: 0;
+            overflow: hidden;
+            background: var(--btn-bg);
+            color: var(--text-main);
+        }
+
+        .leaflet-popup-tip {
+            background: var(--btn-bg);
+        }
+
+        .leaflet-popup-content {
+            margin: 0;
+            width: 300px !important;
+            /* Slightly larger for mobile */
+            max-width: 90vw;
+        }
+
+        .popup-header {
+            background: var(--map-overlay-bg);
+            color: white;
+            padding: 20px;
+        }
+
+        .popup-header h3 {
+            font-size: 1.2rem;
+            margin: 0 0 6px 0;
+            font-weight: 600;
+        }
+
+        .popup-meta {
+            font-size: 0.85rem;
+            opacity: 0.95;
+            display: flex;
+            gap: 10px;
+        }
+
+        .popup-body {
+            padding: 20px;
+        }
+
+        .popup-row {
+            display: flex;
+            align-items: center;
+            margin-bottom: 12px;
+            font-size: 1rem;
+            color: var(--text-sub);
+        }
+
+        .popup-row i {
+            width: 24px;
+            text-align: center;
+            margin-right: 12px;
+            color: var(--accent-color);
+        }
+
+        .navigate-btn {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            width: 100%;
+            background: var(--accent-color);
+            color: #fff;
+            padding: 14px;
+            /* Larger tap area */
+            border-radius: 12px;
+            text-decoration: none;
+            font-weight: 600;
+            margin-top: 16px;
+            transition: background 0.2s;
+            gap: 8px;
+            font-size: 1rem;
+            min-height: 48px;
+            /* Ensure > 44px */
+        }
+
+        [data-theme="dark"] .navigate-btn {
+            color: #000;
+        }
+
+        .navigate-btn:hover {
+            background: var(--accent-hover);
+        }
+
+        /* Custom Map Labels */
+        .map-label {
+            background: transparent;
+            border: none;
+            box-shadow: none;
+            font-size: 14px;
+            /* Slightly larger text */
+            font-weight: 700;
+            color: var(--label-color);
+            text-shadow:
+                2px 0 var(--label-halo),
+                -2px 0 var(--label-halo),
+                0 2px var(--label-halo),
+                0 -2px var(--label-halo),
+                1px 1px var(--label-halo),
+                -1px -1px var(--label-halo),
+                1px -1px var(--label-halo),
+                -1px 1px var(--label-halo);
+            pointer-events: none !important;
+            white-space: nowrap;
+            margin-top: 8px;
+        }
+
+        /* Loading Spinner */
+        #loading {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background: var(--bg-color);
+            z-index: 9999;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+            transition: opacity 0.5s ease;
+        }
+
+        .spinner {
+            width: 40px;
+            height: 40px;
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid var(--accent-color);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% {
+                transform: rotate(0deg);
+            }
+
+            100% {
+                transform: rotate(360deg);
+            }
+        }
+
+        /* Current Location Marker */
+        .user-pos-marker {
+            background: var(--accent-color);
+            border: 2px solid #fff;
+            border-radius: 50%;
+            box-shadow: 0 0 0 4px rgba(52, 152, 219, 0.3);
+            width: 16px;
+            height: 16px;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div id="loading">
+        <div class="spinner"></div>
+        <p style="margin-top:16px;color:var(--text-sub);">載入地圖中...</p>
+    </div>
+
+    <!-- Filter Buttons -->
+    <div class="filter-container">
+        <button class="filter-btn active" data-filter="all">全部</button>
+        <button class="filter-btn" data-filter="北部">北部</button>
+        <button class="filter-btn" data-filter="中部">中部</button>
+        <button class="filter-btn" data-filter="南部">南部</button>
+    </div>
+
+    <!-- Map -->
+    <div id="map"></div>
+
+    <!-- Floating Buttons -->
+    <div class="controls-container">
+        <!-- Dark Mode Toggle -->
+        <button class="float-btn" id="btn-theme" title="切換深色模式">
+            <i class="fas fa-moon"></i>
+        </button>
+
+        <!-- Location -->
+        <button class="float-btn" id="btn-locate" title="我的位置">
+            <i class="fas fa-location-arrow"></i>
+        </button>
+    </div>
+
+    <!-- Leaflet JS -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+        integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+
+    <script>
+        // ---------------------------------------------------------
+        // 1. Data
+        // ---------------------------------------------------------
+        const restaurantsData = [
+            {
+                "name": "珀塔瑪 牧志市場店",
+                "lat": 26.2151837,
+                "lng": 127.6879713,
+                "region": "南部",
+                "category": "美食",
+                "price": "¥1000-¥3000"
+            },
+            {
+                "name": "珀塔瑪 那霸機場國內線到達大廳店",
+                "lat": 26.2065616,
+                "lng": 127.6508027,
+                "region": "南部",
+                "category": "美食",
+                "price": "¥1000-¥3000"
+            },
+            {
+                "name": "珀塔瑪 那霸機場國際線美食區店",
+                "lat": 26.2078028,
+                "lng": 127.6504602,
+                "region": "南部",
+                "category": "美食",
+                "price": "¥1000-¥3000"
+            },
+            {
+                "name": "燒肉王（那覇久茂地店）",
+                "lat": 26.2193541,
+                "lng": 127.6820814,
+                "region": "南部",
+                "category": "美食",
+                "price": "¥1000-¥3000"
+            },
+            {
+                "name": "燒肉王（沖繩日橋店）",
+                "lat": 26.1961755,
+                "lng": 127.7186496,
+                "region": "南部",
+                "category": "美食",
+                "price": "¥1000-¥3000"
+            },
+            {
+                "name": "燒肉王（那覇新都心店）",
+                "lat": 26.2284582,
+                "lng": 127.6906379,
+                "region": "南部",
+                "category": "美食",
+                "price": "¥1000-¥3000"
+            },
+            {
+                "name": "炭火焼肉専門店 牛皇",
+                "lat": 26.2178299,
+                "lng": 127.6815803,
+                "region": "南部",
+                "category": "美食",
+                "price": "¥1000-¥3000"
+            },
+            {
+                "name": "燒肉本部牧場 那霸店",
+                "lat": 26.2153519,
+                "lng": 127.6794203,
+                "region": "南部",
+                "category": "美食",
+                "price": "¥1000-¥3000"
+            },
+            {
+                "name": "燒肉本部牧場 國際通店",
+                "lat": 26.2135207,
+                "lng": 127.6811033,
+                "region": "南部",
+                "category": "美食",
+                "price": "¥1000-¥3000"
+            },
+            {
+                "name": "目利銀次 新都心店",
+                "lat": 26.2301233,
+                "lng": 127.6928864,
+                "region": "南部",
+                "category": "美食",
+                "price": "¥1000-¥3000"
+            },
+            {
+                "name": "暖暮拉麵 那霸牧志店",
+                "lat": 26.2178669,
+                "lng": 127.6873312,
+                "region": "南部",
+                "category": "美食",
+                "price": "¥1000-¥3000"
+            },
+            {
+                "name": "暖暮拉麵糸滿店",
+                "lat": 26.1510002,
+                "lng": 127.6726852,
+                "region": "南部",
+                "category": "美食",
+                "price": "¥1000-¥3000"
+            },
+            {
+                "name": "琉家拉麵 國際通本店",
+                "lat": 26.2140732,
+                "lng": 127.6834725,
+                "region": "南部",
+                "category": "美食",
+                "price": "¥1000-¥3000"
+            },
+            {
+                "name": "Mazemen Mahoroba 台灣乾拌麵",
+                "lat": 26.2176405,
+                "lng": 127.687215,
+                "region": "南部",
+                "category": "美食",
+                "price": "¥1000-¥3000"
+            },
+            {
+                "name": "Marutama味噌飯屋",
+                "lat": 26.210554,
+                "lng": 127.679864,
+                "region": "南部",
+                "category": "美食",
+                "price": "¥1000-¥3000"
+            },
+            {
+                "name": "魚屋直營食堂",
+                "lat": 26.1904014,
+                "lng": 127.6598479,
+                "region": "南部",
+                "category": "美食",
+                "price": "¥1000-¥3000"
+            },
+            {
+                "name": "Sakanaya Chokuei Shokudo Uomaru",
+                "lat": 26.2230778,
+                "lng": 127.6847113,
+                "region": "南部",
+                "category": "美食",
+                "price": "¥1000-¥3000"
+            },
+            {
+                "name": "幸福鬆餅",
+                "lat": 26.1765151,
+                "lng": 127.640567,
+                "region": "南部",
+                "category": "美食",
+                "price": "¥1000-¥3000"
+            },
+            {
+                "name": "浜邊的茶屋",
+                "lat": 26.1335308,
+                "lng": 127.7846459,
+                "region": "南部",
+                "category": "美食",
+                "price": "¥1000-¥3000"
+            },
+            {
+                "name": "Okinawa Soba & Cafe Yagiya（屋宜家 やぎや）",
+                "lat": 26.127333,
+                "lng": 127.7369419,
+                "region": "南部",
+                "category": "美食",
+                "price": "¥1000-¥3000"
+            },
+            {
+                "name": "Cafe Kurukuma（Cafe薑黃花）",
+                "lat": 26.1621216,
+                "lng": 127.8123779,
+                "region": "南部",
+                "category": "美食",
+                "price": "¥1000-¥3000"
+            },
+            {
+                "name": "oHacorté Izumizaki",
+                "lat": 26.210674,
+                "lng": 127.6791086,
+                "region": "南部",
+                "category": "美食",
+                "price": "¥1000-¥3000"
+            },
+            {
+                "name": "琉球之牛 那霸國際通（3F）",
+                "lat": 26.2162955,
+                "lng": 127.6891753,
+                "region": "南部",
+                "category": "美食",
+                "price": "¥1000-¥3000"
+            },
+            {
+                "name": "傑克牛排館",
+                "lat": 26.2128953,
+                "lng": 127.6724952,
+                "region": "南部",
+                "category": "美食",
+                "price": "¥1000-¥3000"
+            },
+            {
+                "name": "中本天婦羅店",
+                "lat": 26.1315502,
+                "lng": 127.7721275,
+                "region": "南部",
+                "category": "美食",
+                "price": "¥1000-¥3000"
+            },
+            {
+                "name": "大城天婦羅店",
+                "lat": 26.1285246,
+                "lng": 127.771141,
+                "region": "南部",
+                "category": "美食",
+                "price": "¥1000-¥3000"
+            },
+            {
+                "name": "燒肉王（北谷店）",
+                "lat": 26.3211344,
+                "lng": 127.7591385,
+                "region": "中部",
+                "category": "美食",
+                "price": "¥1000-¥3000"
+            },
+            {
+                "name": "燒肉王（沖縄美里店）",
+                "lat": 26.3482742,
+                "lng": 127.8241365,
+                "region": "中部",
+                "category": "美食",
+                "price": "¥1000-¥3000"
+            },
+            {
+                "name": "暖暮拉麵 中城店",
+                "lat": 26.2530764,
+                "lng": 127.7735419,
+                "region": "中部",
+                "category": "美食",
+                "price": "¥1000-¥3000"
+            },
+            {
+                "name": "暖暮拉麵 沖繩美原店",
+                "lat": 26.3483952,
+                "lng": 127.8183983,
+                "region": "中部",
+                "category": "美食",
+                "price": "¥1000-¥3000"
+            },
+            {
+                "name": "暖暮拉麵 北谷砂辺店",
+                "lat": 26.3305812,
+                "lng": 127.7450324,
+                "region": "中部",
+                "category": "美食",
+                "price": "¥1000-¥3000"
+            },
+            {
+                "name": "Houki Boshi 可麗露 港川本店",
+                "lat": 26.2626869,
+                "lng": 127.7156565,
+                "region": "中部",
+                "category": "美食",
+                "price": "¥1000-¥3000"
+            },
+            {
+                "name": "oHacorte 港川店",
+                "lat": 26.2624873,
+                "lng": 127.7153652,
+                "region": "中部",
+                "category": "美食",
+                "price": "¥1000-¥3000"
+            },
+            {
+                "name": "雞湯拉麵屋 石工夫",
+                "lat": 26.2633717,
+                "lng": 127.7160947,
+                "region": "中部",
+                "category": "美食",
+                "price": "¥1000-¥3000"
+            },
+            {
+                "name": "Seaside Cafe Hanon",
+                "lat": 26.3161628,
+                "lng": 127.7538499,
+                "region": "中部",
+                "category": "美食",
+                "price": "¥1000-¥3000"
+            },
+            {
+                "name": "Taco Rice Cafe Kijimuna",
+                "lat": 26.3159218,
+                "lng": 127.7546408,
+                "region": "中部",
+                "category": "美食",
+                "price": "¥1000-¥3000"
+            },
+            {
+                "name": "Chatan Dunchi",
+                "lat": 26.3153165,
+                "lng": 127.7537217,
+                "region": "中部",
+                "category": "美食",
+                "price": "¥1000-¥3000"
+            },
+            {
+                "name": "The Calif Kitchen Okinawa",
+                "lat": 26.3157304,
+                "lng": 127.7537565,
+                "region": "中部",
+                "category": "美食",
+                "price": "¥1000-¥3000"
+            },
+            {
+                "name": "蒸気海鮮 — Chatan Steam Seafood",
+                "lat": 26.3202086,
+                "lng": 127.7536892,
+                "region": "中部",
+                "category": "美食",
+                "price": "¥1000-¥3000"
+            },
+            {
+                "name": "琉球之牛 北谷店 (美國村)",
+                "lat": 26.3204651,
+                "lng": 127.7536529,
+                "region": "中部",
+                "category": "美食",
+                "price": "¥1000-¥3000"
+            },
+            {
+                "name": "迴轉壽司市場 美浜店",
+                "lat": 26.3166986,
+                "lng": 127.7592467,
+                "region": "中部",
+                "category": "美食",
+                "price": "¥1000-¥3000"
+            },
+            {
+                "name": "Mother Coffee",
+                "lat": 26.3090886,
+                "lng": 127.7812301,
+                "region": "中部",
+                "category": "美食",
+                "price": "¥1000-¥3000"
+            },
+            {
+                "name": "燒肉本部牧場 本部總店",
+                "lat": 26.657838,
+                "lng": 127.8854215,
+                "region": "北部",
+                "category": "美食",
+                "price": "¥1000-¥3000"
+            },
+            {
+                "name": "燒肉王（名護店）",
+                "lat": 26.6061485,
+                "lng": 127.9803616,
+                "region": "北部",
+                "category": "美食",
+                "price": "¥1000-¥3000"
+            },
+            {
+                "name": "燒肉本部牧場 名護店",
+                "lat": 26.6021033,
+                "lng": 127.9637637,
+                "region": "北部",
+                "category": "美食",
+                "price": "¥1000-¥3000"
+            },
+            {
+                "name": "暖暮拉麵 名護店",
+                "lat": 26.5823173,
+                "lng": 127.9846708,
+                "region": "北部",
+                "category": "美食",
+                "price": "¥1000-¥3000"
+            },
+            {
+                "name": "琉球の牛 恩納本館",
+                "lat": 26.4519972,
+                "lng": 127.8056266,
+                "region": "北部",
+                "category": "美食",
+                "price": "¥1000-¥3000"
+            },
+            {
+                "name": "琉球の牛 恩納別館",
+                "lat": 26.4506943,
+                "lng": 127.8038175,
+                "region": "北部",
+                "category": "美食",
+                "price": "¥1000-¥3000"
+            },
+            {
+                "name": "元祖海葡萄總店",
+                "lat": 26.5041478,
+                "lng": 127.8505469,
+                "region": "北部",
+                "category": "美食",
+                "price": "¥1000-¥3000"
+            },
+            {
+                "name": "Hawaiian Pancakes House Paanilani",
+                "lat": 26.508997,
+                "lng": 127.8722411,
+                "region": "北部",
+                "category": "美食",
+                "price": "¥1000-¥3000"
+            },
+            {
+                "name": "Yukino",
+                "lat": 26.5938492,
+                "lng": 127.9650345,
+                "region": "北部",
+                "category": "美食",
+                "price": "¥1000-¥3000"
+            },
+            {
+                "name": "百年古家 大家 阿古豬",
+                "lat": 26.6209963,
+                "lng": 127.9636717,
+                "region": "北部",
+                "category": "美食",
+                "price": "¥1000-¥3000"
+            },
+            {
+                "name": "Captain Kangaroo Hamburger",
+                "lat": 26.6226879,
+                "lng": 127.8904418,
+                "region": "北部",
+                "category": "美食",
+                "price": "¥1000-¥3000"
+            },
+            {
+                "name": "海人料理 海邦丸（本店）",
+                "lat": 26.682195,
+                "lng": 127.8836417,
+                "region": "北部",
+                "category": "美食",
+                "price": "¥1000-¥3000"
+            },
+            {
+                "name": "海人料理海邦丸（二店）",
+                "lat": 26.68523,
+                "lng": 127.8776939,
+                "region": "北部",
+                "category": "美食",
+                "price": "¥1000-¥3000"
+            },
+            {
+                "name": "岸本食堂（本店）",
+                "lat": 26.6603253,
+                "lng": 127.8958949,
+                "region": "北部",
+                "category": "美食",
+                "price": "¥1000-¥3000"
+            },
+            {
+                "name": "岸本食堂（八重岳店）",
+                "lat": 26.6571779,
+                "lng": 127.9110342,
+                "region": "北部",
+                "category": "美食",
+                "price": "¥1000-¥3000"
+            },
+            {
+                "name": "古宇利蝦蝦飯",
+                "lat": 26.6969393,
+                "lng": 128.0197864,
+                "region": "北部",
+                "category": "美食",
+                "price": "¥1000-¥3000"
+            },
+            {
+                "name": "食事処 錦屋",
+                "lat": 26.697656,
+                "lng": 128.0197426,
+                "region": "北部",
+                "category": "美食",
+                "price": "¥1000-¥3000"
+            },
+            {
+                "name": "Airando Fiji Restaurant & Cafe",
+                "lat": 26.69797,
+                "lng": 128.0197502,
+                "region": "北部",
+                "category": "美食",
+                "price": "¥1000-¥3000"
+            },
+            {
+                "name": "Shirasa 食堂",
+                "lat": 26.6966389,
+                "lng": 128.0166389,
+                "region": "北部",
+                "category": "美食",
+                "price": "¥1000-¥3000"
+            },
+            {
+                "name": "海人料理 亀ぬ浜",
+                "lat": 26.501421,
+                "lng": 127.857863,
+                "region": "北部",
+                "category": "美食",
+                "price": "¥1000-¥3000"
+            },
+            {
+                "name": "海人食堂",
+                "lat": 26.3902334,
+                "lng": 127.7235703,
+                "region": "北部",
+                "category": "美食",
+                "price": "¥1000-¥3000"
+            },
+            {
+                "name": "披薩喫茶 花人逢",
+                "lat": 26.6685007,
+                "lng": 127.9007959,
+                "region": "北部",
+                "category": "美食",
+                "price": "¥1000-¥3000"
+            },
+            {
+                "name": "King Tacos 金武本店",
+                "lat": 26.4532829,
+                "lng": 127.9172771,
+                "region": "北部",
+                "category": "美食",
+                "price": "¥1000-¥3000"
+            },
+            {
+                "name": "山原蕎麥麵",
+                "lat": 26.650532,
+                "lng": 127.9494745,
+                "region": "北部",
+                "category": "美食",
+                "price": "¥1000-¥3000"
+            }
+        ];
+
+        // ---------------------------------------------------------
+        // 2. Application Logic
+        // ---------------------------------------------------------
+        const map = L.map('map', {
+            zoomControl: false
+        }).setView([26.4, 127.9], 9);
+
+        L.control.zoom({ position: 'topright' }).addTo(map);
+
+        // Tile Layers
+        const tiles = {
+            light: 'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png',
+            dark: 'https://{s}.basemaps.cartocdn.com/rastertiles/dark_all/{z}/{x}/{y}{r}.png'
+        };
+
+        // Current tile layer
+        let tileLayer = L.tileLayer(tiles.light, {
+            attribution: '&copy; OpenStreetMap &copy; CARTO',
+            maxZoom: 20
+        }).addTo(map);
+
+        let markers = [];
+        let currentFilter = 'all';
+
+        // Initialize Data
+        function initApp() {
+            renderMarkers(restaurantsData);
+            document.getElementById('loading').style.opacity = '0';
+            setTimeout(() => document.getElementById('loading').remove(), 500);
+        }
+
+        // --- NEW: Price Color Logic ---
+        function getMarkerColor(priceStr) {
+            // Default Blue
+            let color = "#3498db";
+            if (document.body.getAttribute('data-theme') === 'dark') color = "#64b5f6";
+
+            if (!priceStr) return color;
+
+            // Extract first number found
+            const match = priceStr.match(/\d+/);
+            if (match) {
+                const price = parseInt(match[0], 10);
+                if (price < 1000) {
+                    return "#2ecc71"; // Green (Cheap)
+                } else if (price >= 3000) {
+                    return "#e74c3c"; // Red (Expensive)
+                }
+            }
+            return color;
+        }
+
+        // Render Markers with Labels
+        function renderMarkers(data) {
+            markers.forEach(m => map.removeLayer(m));
+            markers = [];
+
+            data.forEach(item => {
+                const color = getMarkerColor(item.price);
+
+                const marker = L.circleMarker([item.lat, item.lng], {
+                    radius: 7,
+                    fillColor: color,
+                    color: "#fff",
+                    weight: 2,
+                    opacity: 1,
+                    fillOpacity: 0.95
+                });
+
+                // Add Permanent Label
+                marker.bindTooltip(item.name, {
+                    permanent: true,
+                    direction: 'top',
+                    className: 'map-label',
+                    offset: [0, -5]
+                });
+
+                marker.bindPopup(createPopupContent(item));
+
+                marker.addTo(map);
+                markers.push(marker);
+            });
+
+            if (data.length > 0) {
+                const group = L.featureGroup(markers);
+                map.fitBounds(group.getBounds(), { padding: [30, 30] });
+            }
+        }
+
+        function createPopupContent(item) {
+            // Use specific navigation URL schema for better app opening
+            // Universal Link that works well on both iOS and Android to open Maps app
+            const googleMapsLink = `https://www.google.com/maps/dir/?api=1&destination=${item.lat},${item.lng}&destination_place_id=${encodeURIComponent(item.name)}`;
+
+            return `
+                <div class="popup-header">
+                    <h3>${item.name}</h3>
+                    <div class="popup-meta">
+                        <span>${item.region}</span>
+                    </div>
+                </div>
+                <div class="popup-body">
+                    <div class="popup-row">
+                        <i class="fas fa-utensils"></i> ${item.category}
+                    </div>
+                    <div class="popup-row">
+                        <i class="fas fa-yen-sign"></i> ${item.price}
+                    </div>
+                    <a href="${googleMapsLink}" target="_blank" class="navigate-btn">
+                        <i class="fas fa-location-arrow"></i> 導航去這裡
+                    </a>
+                </div>
+            `;
+        }
+
+        // Theme Toggle Logic
+        const btnTheme = document.getElementById('btn-theme');
+        const iconTheme = btnTheme.querySelector('i');
+
+        btnTheme.addEventListener('click', () => {
+            const currentTheme = document.body.getAttribute('data-theme');
+            const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+
+            document.body.setAttribute('data-theme', newTheme);
+
+            // Switch Icon
+            if (newTheme === 'dark') {
+                iconTheme.classList.replace('fa-moon', 'fa-sun');
+                tileLayer.setUrl(tiles.dark);
+            } else {
+                iconTheme.classList.replace('fa-sun', 'fa-moon');
+                tileLayer.setUrl(tiles.light);
+            }
+
+            // Re-render to update marker colors (Blue changes shade in dark mode)
+            // Cheap enough to strict re-render
+            const region = document.querySelector('.filter-btn.active').dataset.filter;
+            if (region === 'all') renderMarkers(restaurantsData);
+            else renderMarkers(restaurantsData.filter(i => i.region === region));
+        });
+
+        // Filter Logic
+        document.querySelectorAll('.filter-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+
+                const region = btn.dataset.filter;
+                if (region === 'all') {
+                    renderMarkers(restaurantsData);
+                } else {
+                    renderMarkers(restaurantsData.filter(item => item.region === region));
+                }
+            });
+        });
+
+        // Geolocation Logic
+        const btnLocate = document.getElementById('btn-locate');
+        let userMarker = null;
+
+        btnLocate.addEventListener('click', () => {
+            if (!navigator.geolocation) {
+                alert('瀏覽器不支援定位功能');
+                return;
+            }
+
+            btnLocate.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+
+            navigator.geolocation.getCurrentPosition(
+                (pos) => {
+                    const lat = pos.coords.latitude;
+                    const lng = pos.coords.longitude;
+                    const acc = pos.coords.accuracy;
+
+                    if (userMarker) map.removeLayer(userMarker);
+
+                    const userIcon = L.divIcon({
+                        className: 'user-pos-marker',
+                        iconSize: [16, 16]
+                    });
+
+                    userMarker = L.marker([lat, lng], { icon: userIcon }).addTo(map);
+
+                    const themeColor = document.body.getAttribute('data-theme') === 'dark' ? '#64b5f6' : '#3498db';
+                    L.circle([lat, lng], { radius: acc, color: themeColor, fillOpacity: 0.1 }).addTo(map);
+
+                    map.flyTo([lat, lng], 13, { duration: 1.5 });
+
+                    btnLocate.innerHTML = '<i class="fas fa-location-arrow"></i>';
+                },
+                (err) => {
+                    console.error(err);
+                    alert('無法取得您的位置');
+                    btnLocate.innerHTML = '<i class="fas fa-location-arrow"></i>';
+                },
+                { enableHighAccuracy: true }
+            );
+        });
+
+        // Run
+        initApp();
+
+    </script>
+</body>
+
+</html>
