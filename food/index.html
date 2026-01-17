@@ -345,12 +345,10 @@
         }
 
         .card-title {
-            color: white;
-            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
-            font-size: 20px;
+            font-size: 18px;
             font-weight: 700;
-            line-height: 1.2;
-            width: 90%;
+            line-height: 1.3;
+            color: #333;
         }
 
         .card-body {
@@ -430,6 +428,29 @@
 
         .btn-nav:active {
             opacity: 0.8;
+        }
+
+        /* Popup Card */
+        .leaflet-popup-content-wrapper {
+            padding: 0;
+            border-radius: 12px;
+            overflow: hidden;
+        }
+
+        .leaflet-popup-content {
+            margin: 0 !important;
+            width: 280px !important;
+        }
+
+        .popup-card {
+            width: 100%;
+            background: #fff;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .popup-content-p {
+            padding: 16px;
         }
 
         /* Marker Clusters */
@@ -595,7 +616,7 @@
             window.google = { visualization: { Query: { setResponse: window.handleJsonp } } };
 
             const script = document.createElement('script');
-            script.src = SHEET_JSONP + "&_=" + Date.now();
+            script.src = SHEET_JSONP;
             script.onerror = () => { alert("Data Load Failed"); removeLoading(); };
             document.body.appendChild(script);
         }
@@ -611,25 +632,25 @@
 
             const idx = {
                 region: getIdx('region', '地區'),
-                name: getIdx('name', '店名'),
-                cat: getIdx('category', '分類'),
-                price: getIdx('price', '價格'),
-                must: getIdx('must_order', '必點', 'recommended'),
-                desc: getIdx('description', '簡介', 'notes', '備註'),
-                addr1: getIdx('address', '地址'),
-                addr2: getIdx('map', 'map code'), // Secondary address source
-                link: getIdx('gmap_link', '連結', 'google map', 'map'),
-                lat: getIdx('lat', 'latitude', '緯度'),
-                lng: getIdx('lng', 'longitude', '經度')
+                name: getIdx('name', '店名', '店家名稱'),
+                cat: getIdx('category', '種類', '分類'),
+                price: getIdx('price', 'price', '預算'),
+                must: getIdx('must_order', 'must', '推薦菜色', '必點'),
+                desc: getIdx('description', 'desc', '介紹', '心得'),
+                addr1: getIdx('address', '地址', 'address'), // Explicit Address Column
+                addr2: getIdx('map', 'map code'),             // Map Column (Fallback)
+                link: getIdx('link', 'gmap_link', '連結'),
+                lat: getIdx('lat', 'latitude'),
+                lng: getIdx('lng', 'longitude'),
+                img: getIdx('image', 'img', '照片', '圖片')   // New Image Column
             };
 
-            const rows = json.table.rows;
-            allData = rows.map(r => {
-                const c = r.c;
+            const data = json.table.rows.map(row => {
+                const c = row.c;
                 if (!c) return null;
-                const v = (i) => (i >= 0 && c[i] && c[i].v !== null) ? String(c[i].v).trim() : "";
+                const v = (i) => (i !== -1 && c[i]) ? (c[i].f || c[i].v) : '';
                 const getNum = (i) => {
-                    if (i >= 0 && c[i] && c[i].v !== null) {
+                    if (i !== -1 && c[i] && c[i].v !== null) {
                         const val = parseFloat(c[i].v);
                         return isNaN(val) ? null : val;
                     }
@@ -637,17 +658,34 @@
                 };
 
                 // Address Fallback Logic
-                // If 'Address' column is empty, try 'Map' column
-                let displayAddr = v(idx.addr1) || v(idx.addr2);
+                let rawAddr1 = v(idx.addr1);
+                let rawAddr2 = v(idx.addr2); // Map column
 
-                // 1. Explicit Columns
-                let lat = getNum(idx.lat);
-                let lng = getNum(idx.lng);
+                let displayAddr = rawAddr1;
+                let displayLink = v(idx.link);
+
+                // Smart handling of Map Column (addr2)
+                if (rawAddr2) {
+                    if (rawAddr2.startsWith('http')) {
+                        // It's a URL -> Use as Link fallback
+                        if (!displayLink) displayLink = rawAddr2;
+                    } else {
+                        // It's text -> Use as Address fallback
+                        if (!displayAddr) displayAddr = rawAddr2;
+                    }
+                }
+
+                // 2. Try Explicit Columns (J=9, L=11)
+                // Note: Sheet columns are 0-indexed in array. 
+                // J is 9th index (A=0...J=9)
+                // L is 11th index
+                let lat = getNum(c[9]) || getNum(c[10]) || getNum(c[12]);
+                let lng = getNum(c[11]) || getNum(c[12]) || getNum(c[13]);
 
                 // 2. Scan Link & Address/Map Column for URL Coords
                 if (lat === null || lng === null) {
                     // Check Link, then Map column, then Name (rare but possible)
-                    const targets = [v(idx.link), v(idx.addr2), v(idx.addr1)];
+                    const targets = [displayLink, rawAddr2, rawAddr1];
                     for (const url of targets) {
                         if (!url) continue;
                         // Regex @lat,lng
@@ -692,7 +730,20 @@
                     });
                 }
 
-                if (!v(idx.name) || !lat || !lng) return null;
+                // Get Image
+                let img = v(idx.img);
+                // If not found by header name, try explicit column 11 if it's a string URL
+                if (!img && c[11] && c[11].v && typeof c[11].v === 'string' && c[11].v.startsWith('http')) {
+                    img = String(c[11].v);
+                }
+
+                // Double check it looks like a URL
+                // Ignore Google Search URLs (User pasted search page instead of image)
+                if (img && (!img.startsWith('http') || img.includes('google.com/search'))) {
+                    img = null;
+                }
+
+                if (!v(idx.name)) return null;
 
                 return {
                     region: v(idx.region),
@@ -702,17 +753,127 @@
                     must: v(idx.must),
                     desc: v(idx.desc) || displayAddr, // Fallback desc to addr
                     addr: displayAddr,
-                    link: v(idx.link),
+                    link: displayLink,
+                    img: img,
                     lat, lng
                 };
             }).filter(x => x);
 
-            // populateCategoryFilters(); // Removed
-            renderMarkers(allData);
+            allData = data;
+            window.allData = data; // Keep both for safety/debugging
+
+            // Render valid ones first
+            renderMarkers(data.filter(d => d.lat && d.lng));
             removeLoading();
+
+            // Kick off auto-geocoding for missing ones
+            geocodeMissingItems(data);
+            reverseGeocodeItems(data);
         };
 
-        // function populateCategoryFilters() { ... } // Removed
+        async function geocodeMissingItems(data) {
+            const missing = data.filter(d => (!d.lat || !d.lng) && d.addr);
+            if (missing.length === 0) return;
+
+            console.log(`Auto-geocoding ${missing.length} items...`);
+
+            for (const item of missing) {
+                // cache key
+                const cacheKey = `geo_coords_${item.addr}`;
+                const cached = localStorage.getItem(cacheKey);
+
+                if (cached) {
+                    const c = JSON.parse(cached);
+                    item.lat = c.lat;
+                    item.lng = c.lng;
+                    applyFilter(true);
+                    continue;
+                }
+
+                try {
+                    // Simple rate limit
+                    await new Promise(r => setTimeout(r, 1200));
+
+                    // Clean address: remove postal codes (e.g. 904-0401) and '日本' to reduce noise
+                    let cleanAddr = item.addr.replace(/\d{3}-\d{4}/g, '').replace(/日本/g, '').trim();
+                    // If result is too short, stick to original
+                    if (cleanAddr.length < 5) cleanAddr = item.addr;
+
+                    let url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(cleanAddr)}`;
+                    let res = await fetch(url);
+                    let results = await res.json();
+
+                    // Fallback: Try searching by Name + Region if address fails
+                    if (!results || results.length === 0) {
+                        console.log(`Address lookup failed for ${item.name}, trying Name...`);
+                        await new Promise(r => setTimeout(r, 1200));
+
+                        // Try "Name Okinawa" (More reliable than Region which might be "Hotel")
+                        const query = `${item.name} Okinawa`;
+                        url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}`;
+                        res = await fetch(url);
+                        results = await res.json();
+                    }
+
+                    if (results && results.length > 0) {
+                        item.lat = parseFloat(results[0].lat);
+                        item.lng = parseFloat(results[0].lon);
+
+                        localStorage.setItem(cacheKey, JSON.stringify({ lat: item.lat, lng: item.lng }));
+                        applyFilter(true);
+                    }
+                } catch (e) {
+                    console.error("Geocoding failed for", item.name, e);
+                }
+            }
+        }
+
+        async function reverseGeocodeItems(data) {
+            // Find items with Lat/Lng but (NO Addr OR Addr looks like a sentence/invalid)
+            // Heuristic: Real addresses rarely contain "。" (Japanese full stop)
+            const missing = data.filter(d =>
+                d.lat && d.lng && (
+                    !d.addr ||
+                    d.addr.includes('。') ||
+                    d.addr.trim().length === 0
+                )
+            );
+
+            if (missing.length === 0) return;
+
+            console.log(`Reverse-geocoding ${missing.length} items...`);
+
+            for (const item of missing) {
+                const cacheKey = `geo_addr_${item.lat}_${item.lng}`;
+                const cached = localStorage.getItem(cacheKey);
+
+                if (cached) {
+                    item.addr = cached;
+                    applyFilter(true);
+                    continue;
+                }
+
+                try {
+                    // Simple rate limit
+                    await new Promise(r => setTimeout(r, 1200));
+
+                    const url = `https://nominatim.openstreetmap.org/reverse?format=json&lat=${item.lat}&lon=${item.lng}`;
+                    const res = await fetch(url);
+                    const result = await res.json();
+
+                    if (result && result.display_name) {
+                        // Cleanup address: retain specificity but maybe shorten?
+                        // For now use full address to be safe.
+                        item.addr = result.display_name;
+                        localStorage.setItem(cacheKey, result.display_name);
+                        // Force update UI
+                        applyFilter(true);
+                    }
+                } catch (e) {
+                    console.error("Reverse geocoding failed for", item.name, e);
+                }
+            }
+        }
 
         // --- MAP & MARKERS ---
         function renderMarkers(data) {
@@ -725,20 +886,26 @@
                 if (p === 'high') color = '#FF3B30'; // Red
                 if (p === 'low') color = '#34C759'; // Green
 
-                const marker = L.circleMarker([item.lat, item.lng], {
-                    radius: 8,
-                    fillColor: color,
-                    color: '#fff',
-                    weight: 2,
-                    opacity: 1,
-                    fillOpacity: 0.9
+                // Determine Icon
+                const iconClass = getCategoryIcon(item.category);
+
+                const customIcon = L.divIcon({
+                    className: 'custom-div-icon',
+                    html: `<div style="background-color: ${color}; width: 100%; height: 100%; border-radius: 50%; border: 2px solid white; box-shadow: 0 2px 4px rgba(0,0,0,0.3); display: flex; align-items: center; justify-content: center;">
+                        <i class="fas ${iconClass}" style="color: white; font-size: 14px;"></i>
+                    </div>`,
+                    iconSize: [32, 32],
+                    iconAnchor: [16, 32],
+                    popupAnchor: [0, -32]
                 });
 
-                // Add Label
+                const marker = L.marker([item.lat, item.lng], { icon: customIcon });
+
+                // Add Label logic (custom markers don't support bindTooltip strictly same as circleMarker sometimes, but usually fine)
                 marker.bindTooltip(item.name, {
                     permanent: true,
                     direction: 'top',
-                    offset: [0, -8],
+                    offset: [0, -32],
                     className: 'map-label',
                     interactive: false
                 });
@@ -747,21 +914,39 @@
                 const gLink = item.link && item.link.startsWith('http') ? item.link :
                     `https://www.google.com/maps/dir/?api=1&destination=${item.lat},${item.lng}&destination_place_id=${encodeURIComponent(item.name)}`;
 
+                // Determine Image (Real or Fallback)
+                const displayImg = item.img || getFallbackImage(item.category);
+
                 const html = `
-                    <div class="card-header" data-price="${item.price}">
-                        <div class="card-title">${item.name}</div>
-                    </div>
-                    <div class="card-body">
-                        <div class="tags">
-                            <span class="tag cat">${item.category}</span>
-                            <span class="tag price">${item.price === 'Low' ? '$' : item.price === 'High' ? '$$$' : '$$'}</span>
+                    <div class="popup-card">
+                        <div style="width:100%; height:130px; background-image: url('${displayImg}'); background-size: cover; background-position: center; position:relative;">
+                            ${!item.img ? '<div style="position:absolute; bottom:0; right:0; background:rgba(0,0,0,0.6); color:white; font-size:10px; padding:2px 8px; border-radius:6px 0 0 0;">示意圖</div>' : ''}
                         </div>
-                        ${item.must ? `<div class="info-row must-order"><i class="fas fa-star"></i> 必點：${item.must}</div>` : ''}
-                        ${item.addr ? `<div class="info-row"><i class="fas fa-map-marker-alt"></i> ${item.addr}</div>` : ''}
-                        <div class="desc">${item.desc || "暫無簡介"}</div>
-                        <a href="${gLink}" target="_blank" class="btn-nav">
-                            <i class="fas fa-car-side"></i> 導航去這裡
-                        </a>
+                        
+                        <div class="popup-content-p">
+                            <div class="header">
+                                <span class="pill" style="margin:0; flex-shrink:0; background:${color}; color:#fff; font-size:12px; padding:2px 8px; border-radius:4px; height:fit-content; margin-top:2px;">${item.category}</span>
+                                <div class="title" style="margin-left:8px; font-size:18px; font-weight:700; line-height:1.3; color:#1c1c1e;">${item.name}</div>
+                            </div>
+                            
+                            ${item.must ? `<div class="info-row must-order" style="margin-bottom:8px;"><i class="fas fa-star" style="color:#FF9500;"></i> <span style="font-weight:bold; color:#FF3B30;">必點：${item.must}</span></div>` : ''}
+                            
+                            <!-- Always show address if available -->
+                            ${item.addr ? `
+                            <div class="info-row" style="color:#666; font-size:13px; margin-bottom:12px; display:flex; align-items:start;">
+                                <i class="fas fa-map-marker-alt" style="margin-right:6px; margin-top:3px; flex-shrink:0;"></i> 
+                                <span style="flex:1; line-height:1.4;">${item.addr}</span>
+                                <button onclick="copyToClipboard('${item.addr.replace(/'/g, "\\'")}')" style="background:none; border:none; color:#007AFF; cursor:pointer; padding:0 8px; margin-left:4px;">
+                                    <i class="far fa-copy"></i>
+                                </button>
+                            </div>` : ''}
+
+                            <div class="desc" style="margin-bottom:16px; font-size:14px; color:#333; line-height:1.5;">${item.desc && item.desc !== item.addr ? item.desc : ""}</div>
+                            
+                            <a href="${gLink}" target="_blank" class="btn-nav">
+                                <i class="fas fa-location-arrow"></i> 導航去這裡
+                            </a>
+                        </div>
                     </div>
                 `;
 
@@ -770,7 +955,45 @@
             });
         }
 
-        function applyFilter() {
+        window.copyToClipboard = function (text) {
+            navigator.clipboard.writeText(text).then(() => {
+                showToast("地址已複製");
+            }).catch(err => {
+                console.error('Failed to copy: ', err);
+            });
+        };
+
+        function showToast(message) {
+            let toast = document.getElementById('toast-msg');
+            if (!toast) {
+                toast = document.createElement('div');
+                toast.id = 'toast-msg';
+                toast.style.cssText = `
+                    position: fixed;
+                    bottom: 80px;
+                    left: 50%;
+                    transform: translateX(-50%);
+                    background: rgba(0,0,0,0.7);
+                    color: white;
+                    padding: 8px 16px;
+                    border-radius: 20px;
+                    font-size: 14px;
+                    z-index: 3000;
+                    opacity: 0;
+                    transition: opacity 0.3s;
+                    backdrop-filter: blur(5px);
+                `;
+                document.body.appendChild(toast);
+            }
+            toast.textContent = message;
+            toast.style.opacity = '1';
+
+            setTimeout(() => {
+                toast.style.opacity = '0';
+            }, 2000);
+        }
+
+        function applyFilter(skipZoom) {
             const activeFilter = document.querySelector('.pill.active').dataset.filter;
             const searchVal = document.getElementById('search-input').value.toLowerCase().trim();
 
@@ -793,7 +1016,8 @@
                 const matchSearch = !searchVal ||
                     d.name.toLowerCase().includes(searchVal) ||
                     d.category.toLowerCase().includes(searchVal) ||
-                    (d.must && d.must.toLowerCase().includes(searchVal));
+                    (d.must && d.must.toLowerCase().includes(searchVal)) ||
+                    (d.addr && d.addr.toLowerCase().includes(searchVal));
 
                 return matchFilter && matchSearch;
             });
@@ -801,12 +1025,14 @@
             renderMarkers(filtered);
             updateSearchResults(filtered, searchVal);
 
-            // Auto fit bounds
-            if (filtered.length > 0 && (activeFilter !== 'all' || searchVal)) {
-                const bounds = L.latLngBounds(filtered.map(d => [d.lat, d.lng]));
-                map.fitBounds(bounds, { padding: [50, 50], maxZoom: 15 });
-            } else if (activeFilter === 'all' && !searchVal) {
-                map.setView([26.4, 127.9], 10);
+            // Auto fit bounds (Only if NOT skipped)
+            if (!skipZoom) {
+                if (filtered.length > 0 && (activeFilter !== 'all' || searchVal)) {
+                    const bounds = L.latLngBounds(filtered.map(d => [d.lat, d.lng]));
+                    map.fitBounds(bounds, { padding: [50, 50], maxZoom: 15 });
+                } else if (activeFilter === 'all' && !searchVal) {
+                    map.setView([26.4, 127.9], 10);
+                }
             }
         }
 
@@ -822,7 +1048,10 @@
                 return `
                 <div class="search-item" onclick="selectResult(${item.lat}, ${item.lng}, '${nameEsc}')">
                     <div class="search-item-name">${item.name}</div>
-                    <div class="search-item-meta">${item.category} · ${item.region}</div>
+                    <div class="search-item-meta">
+                        ${item.category} · ${item.region}
+                        ${item.addr ? `<br><small style="color:#666;">${item.addr}</small>` : ''}
+                    </div>
                 </div>
             `}).join('');
             container.style.display = 'block';
@@ -867,9 +1096,51 @@
             );
         }
 
-        // Kickoff
+        // kick off
         initApp();
 
+        function getCategoryIcon(category) {
+            const cat = (category || "").toLowerCase();
+            if (cat.includes('拉麵') || cat.includes('麵')) return 'fa-bowl-rice';
+            if (cat.includes('燒肉') || cat.includes('牛排') || cat.includes('肉')) return 'fa-fire';
+            if (cat.includes('海鮮') || cat.includes('魚') || cat.includes('壽司')) return 'fa-fish';
+            if (cat.includes('甜點') || cat.includes('咖啡') || cat.includes('冰') || cat.includes('鬆餅')) return 'fa-mug-hot';
+            if (cat.includes('酒') || cat.includes('居酒屋')) return 'fa-wine-glass';
+            if (cat.includes('漢堡') || cat.includes('burger')) return 'fa-burger';
+            if (cat.includes('飯糰') || cat.includes('米')) return 'fa-rice-cracker';
+            if (cat.includes('披薩') || cat.includes('pizza')) return 'fa-pizza-slice';
+            if (cat.includes('飯店') || cat.includes('住宿') || cat.includes('hotel')) return 'fa-bed';
+
+            return 'fa-utensils'; // Default
+        }
+
+        function getFallbackImage(category) {
+            const cat = (category || "").toLowerCase();
+
+            // High Quality Public Domain Images (Wikimedia Commons)
+            const images = {
+                ramen: 'https://upload.wikimedia.org/wikipedia/commons/thumb/d/dc/Shoyu_Ramen.jpg/800px-Shoyu_Ramen.jpg',
+                bbq: 'https://upload.wikimedia.org/wikipedia/commons/thumb/1/1a/Yakiniku_meat_by_jscash_in_Osaka.jpg/800px-Yakiniku_meat_by_jscash_in_Osaka.jpg',
+                sushi: 'https://upload.wikimedia.org/wikipedia/commons/thumb/6/60/Sushi_platter.jpg/800px-Sushi_platter.jpg',
+                dessert: 'https://upload.wikimedia.org/wikipedia/commons/thumb/e/e8/Matcha_cake%2C_white_chocolate_ice_cream_and_berries_2.jpg/800px-Matcha_cake%2C_white_chocolate_ice_cream_and_berries_2.jpg',
+                burger: 'https://upload.wikimedia.org/wikipedia/commons/thumb/0/0b/RedDot_Burger_Shed.jpg/800px-RedDot_Burger_Shed.jpg',
+                pizza: 'https://upload.wikimedia.org/wikipedia/commons/thumb/a/a3/Eq_it-na_pizza-margherita_sep2005_sml.jpg/800px-Eq_it-na_pizza-margherita_sep2005_sml.jpg',
+                hotel: 'https://upload.wikimedia.org/wikipedia/commons/thumb/4/4b/Hotel_room_Renaissance_Columbus_Ohio.jpg/800px-Hotel_room_Renaissance_Columbus_Ohio.jpg',
+                alcohol: 'https://upload.wikimedia.org/wikipedia/commons/thumb/4/4d/Kirin_beer.jpg/800px-Kirin_beer.jpg',
+                default: 'https://upload.wikimedia.org/wikipedia/commons/thumb/6/6d/Good_Food_Display_-_NCI_Visuals_Online.jpg/800px-Good_Food_Display_-_NCI_Visuals_Online.jpg'
+            };
+
+            if (cat.includes('拉麵') || cat.includes('麵')) return images.ramen;
+            if (cat.includes('燒肉') || cat.includes('牛排')) return images.bbq;
+            if (cat.includes('海鮮') || cat.includes('魚') || cat.includes('壽司')) return images.sushi;
+            if (cat.includes('甜點') || cat.includes('咖啡') || cat.includes('冰') || cat.includes('鬆餅')) return images.dessert;
+            if (cat.includes('漢堡')) return images.burger;
+            if (cat.includes('披薩')) return images.pizza;
+            if (cat.includes('飯店') || cat.includes('住宿') || cat.includes('hotel')) return images.hotel;
+            if (cat.includes('酒') || cat.includes('居酒屋')) return images.alcohol;
+
+            return images.default;
+        }
     </script>
 </body>
 
