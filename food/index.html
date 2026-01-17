@@ -10,11 +10,11 @@
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
         integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
 
-    <!-- Google Fonts -->
+    <!-- Google Fonts: Noto Serif TC (Mincho) & Noto Sans TC (Gothic) -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link
-        href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700&family=Outfit:wght@300;400;600&display=swap"
+        href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700&family=Noto+Serif+TC:wght@400;600;700&display=swap"
         rel="stylesheet">
 
     <!-- Font Awesome -->
@@ -22,38 +22,67 @@
 
     <style>
         :root {
-            /* Light Theme (Default) */
-            --bg-color: #eef2f3;
-            --text-main: #2c3e50;
-            --text-sub: #546e7a;
+            /* --- Japanese Traditional Palette (Wabi-Sabi) --- */
+
+            /* Light Theme */
+            /* Background: Gofun (Rice Powder/Off-white) */
+            --bg-color: #fcfaf2;
+
+            /* Text: Sumi (Ink Black) */
+            --text-main: #2b2b2b;
+            --text-sub: #595857;
+
+            /* Container: White Washi Paper feel */
             --container-bg: rgba(255, 255, 255, 0.95);
-            --accent-color: #3498db;
-            --accent-hover: #2980b9;
-            --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+
+            /* Accent: Ai (Indigo) */
+            --accent-color: #1e3b79;
+            --accent-hover: #162c5b;
+
+            /* Highlight: Shu (Vermilion) */
+            --highlight-color: #d3381c;
+
+            /* Shadow: Soft, diffused */
+            --shadow-lg: 0 4px 20px rgba(43, 43, 43, 0.08);
+
             --btn-bg: #ffffff;
-            --map-overlay-bg: linear-gradient(135deg, #3498db 0%, #2980b9 100%);
+
+            /* Header Gradient: Indigo to styling */
+            --map-overlay-bg: linear-gradient(135deg, #1e3b79 0%, #2a4b8d 100%);
 
             /* Label Styles */
-            --label-color: #2c3e50;
-            --label-halo: #ffffff;
+            --label-color: #2b2b2b;
+            --label-halo: #fcfaf2;
         }
 
         [data-theme="dark"] {
-            /* Dark Theme High Contrast */
-            --bg-color: #1a1a1a;
-            --text-main: #ffffff;
-            --text-sub: #e0e0e0;
-            --container-bg: rgba(45, 45, 45, 0.95);
+            /* --- Dark Theme (Yoru / Midnight) --- */
+
+            /* Background: Kachiro (Deep Black/Navy) */
+            --bg-color: #0f172a;
+
+            /* Text: Gofun (White) */
+            --text-main: #fcfaf2;
+            --text-sub: #94a3b8;
+
+            /* Container: Dark Navy */
+            --container-bg: rgba(30, 41, 59, 0.95);
+
+            /* Accent: Cyan/Blue (Lighter for contrast against dark) */
             --accent-color: #64b5f6;
-            /* Bright Blue */
             --accent-hover: #42a5f5;
-            --shadow-lg: 0 10px 20px rgba(0, 0, 0, 0.6), 0 6px 6px rgba(0, 0, 0, 0.4);
-            --btn-bg: #333333;
-            --map-overlay-bg: linear-gradient(135deg, #1565c0 0%, #0d47a1 100%);
+
+            /* Highlight: Same Vermilion, slightly brighter if needed */
+            --highlight-color: #ff6b6b;
+
+            --shadow-lg: 0 10px 25px rgba(0, 0, 0, 0.5);
+
+            --btn-bg: #1e293b;
+            --map-overlay-bg: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
 
             /* Label Styles Dark */
-            --label-color: #ffffff;
-            --label-halo: #000000;
+            --label-color: #fcfaf2;
+            --label-halo: #0f172a;
         }
 
         * {
@@ -64,13 +93,19 @@
         }
 
         body {
-            font-family: 'Outfit', 'Noto Sans TC', sans-serif;
+            /* Main Font: Sans for readability, Serif for titles */
+            font-family: 'Noto Sans TC', sans-serif;
             color: var(--text-main);
             overflow: hidden;
             height: 100vh;
             width: 100vw;
             background-color: var(--bg-color);
-            transition: background-color 0.3s ease, color 0.3s ease;
+            transition: background-color 0.4s ease, color 0.4s ease;
+        }
+
+        /* Typography Helpers */
+        .font-serif {
+            font-family: 'Noto Serif TC', serif;
         }
 
         /* Full Screen Map */
@@ -84,53 +119,65 @@
         /* UI Controls Container */
         .filter-container {
             position: absolute;
-            top: 20px;
+            top: 24px;
             left: 50%;
             transform: translateX(-50%);
             z-index: 1000;
             background: var(--container-bg);
-            padding: 8px;
-            border-radius: 50px;
+            padding: 6px 8px;
+            border-radius: 4px;
+            /* More squared, traditional look */
             box-shadow: var(--shadow-lg);
             display: flex;
-            gap: 8px;
+            gap: 4px;
             white-space: nowrap;
             overflow-x: auto;
-            max-width: 90vw;
-            backdrop-filter: blur(5px);
-            -webkit-backdrop-filter: blur(5px);
+            max-width: 92vw;
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
             transition: background 0.3s ease;
+            border: 1px solid rgba(0, 0, 0, 0.05);
         }
 
         .filter-btn {
             border: none;
             background: transparent;
-            padding: 8px 16px;
-            border-radius: 20px;
+            padding: 10px 20px;
+            border-radius: 2px;
+            /* Slight round only */
             cursor: pointer;
-            font-size: 0.9rem;
-            font-weight: 500;
-            color: var(--text-sub);
-            transition: all 0.2s ease;
+            font-size: 0.95rem;
+            font-weight: 700;
+            /* Bold for contrast */
+            color: var(--text-main);
+            /* High Contrast */
+            transition: all 0.3s ease;
             white-space: nowrap;
+            font-family: 'Noto Serif TC', serif;
+            /* Serif for buttons */
+        }
+
+        .filter-btn:hover {
+            background: rgba(0, 0, 0, 0.05);
+            color: var(--accent-color);
         }
 
         .filter-btn.active {
             background: var(--accent-color);
-            color: #fff;
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.2);
+            color: #fff !important;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
         }
 
         [data-theme="dark"] .filter-btn.active {
-            color: #121212;
-            background: var(--accent-color);
+            color: #0f172a !important;
+            /* Dark text on bright accent */
         }
 
         /* Floating Buttons (Bottom Right) */
         .controls-container {
             position: absolute;
-            bottom: 30px;
-            right: 20px;
+            bottom: 32px;
+            right: 24px;
             z-index: 1000;
             display: flex;
             flex-direction: column;
@@ -141,26 +188,31 @@
             width: 56px;
             height: 56px;
             background: var(--btn-bg);
-            border-radius: 50%;
-            border: none;
+            border-radius: 12px;
+            /* Structured curve */
+            border: 1px solid rgba(0, 0, 0, 0.1);
+            /* Slightly stronger border */
             box-shadow: var(--shadow-lg);
             cursor: pointer;
             display: flex;
             justify-content: center;
             align-items: center;
-            font-size: 1.2rem;
-            color: var(--text-sub);
-            transition: all 0.2s ease;
+            font-size: 1.25rem;
+            color: var(--text-main);
+            /* High contrast icon */
+            transition: all 0.3s ease;
         }
 
         .float-btn:hover {
             transform: translateY(-2px);
             color: var(--accent-color);
+            border-color: var(--accent-color);
         }
 
-        /* Popup Styling */
+        /* Popup Styling - Japanese Card Style */
         .leaflet-popup-content-wrapper {
-            border-radius: 12px;
+            border-radius: 4px;
+            /* Minimal rounding */
             box-shadow: var(--shadow-lg);
             padding: 0;
             overflow: hidden;
@@ -175,46 +227,90 @@
         .leaflet-popup-content {
             margin: 0;
             width: 300px !important;
-            /* Slightly larger for mobile */
-            max-width: 90vw;
+            max-width: 88vw;
         }
 
         .popup-header {
-            background: var(--map-overlay-bg);
-            color: white;
-            padding: 20px;
+            background-color: var(--btn-bg);
+            /* Clean background */
+            border-bottom: 2px solid var(--accent-color);
+            /* Indigo line as accent */
+            color: var(--text-main);
+            padding: 20px 20px 12px 20px;
         }
 
         .popup-header h3 {
-            font-size: 1.2rem;
-            margin: 0 0 6px 0;
-            font-weight: 600;
+            font-size: 1.3rem;
+            margin: 0 0 8px 0;
+            font-weight: 700;
+            font-family: 'Noto Serif TC', serif;
+            /* Serif Title */
+            color: var(--accent-color);
+            line-height: 1.4;
+        }
+
+        [data-theme="dark"] .popup-header h3 {
+            color: var(--accent-color);
         }
 
         .popup-meta {
             font-size: 0.85rem;
-            opacity: 0.95;
+            color: var(--text-sub);
             display: flex;
-            gap: 10px;
+            gap: 12px;
+            font-family: 'Noto Sans TC', sans-serif;
+            letter-spacing: 0.05em;
         }
 
         .popup-body {
-            padding: 20px;
+            padding: 16px 20px 24px 20px;
+        }
+
+        .popup-desc {
+            font-size: 0.95rem;
+            line-height: 1.6;
+            margin-bottom: 16px;
+            color: var(--text-main);
+            opacity: 0.9;
+            font-weight: 400;
+        }
+
+        .popup-rec {
+            font-size: 0.95rem;
+            margin-bottom: 16px;
+            color: var(--highlight-color);
+            font-weight: 600;
+            display: flex;
+            align-items: flex-start;
+            gap: 8px;
+        }
+
+        .popup-rec i {
+            margin-top: 3px;
         }
 
         .popup-row {
             display: flex;
             align-items: center;
-            margin-bottom: 12px;
-            font-size: 1rem;
+            margin-bottom: 8px;
+            font-size: 0.9rem;
             color: var(--text-sub);
+            letter-spacing: 0.02em;
         }
 
         .popup-row i {
             width: 24px;
             text-align: center;
             margin-right: 12px;
-            color: var(--accent-color);
+            color: var(--text-sub);
+            /* Subdued icons */
+            font-size: 0.9em;
+        }
+
+        .popup-price {
+            font-family: 'Noto Serif TC', serif;
+            font-weight: 600;
+            color: var(--text-main);
         }
 
         .navigate-btn {
@@ -222,27 +318,31 @@
             justify-content: center;
             align-items: center;
             width: 100%;
-            background: var(--accent-color);
+            background: var(--highlight-color);
+            /* Vermilion for action */
             color: #fff;
             padding: 14px;
-            /* Larger tap area */
-            border-radius: 12px;
+            border-radius: 4px;
+            /* Minimal rounding */
             text-decoration: none;
-            font-weight: 600;
-            margin-top: 16px;
-            transition: background 0.2s;
+            font-weight: 500;
+            margin-top: 20px;
+            transition: opacity 0.2s, transform 0.2s;
             gap: 8px;
             font-size: 1rem;
-            min-height: 48px;
-            /* Ensure > 44px */
+            letter-spacing: 0.05em;
+            box-shadow: 0 2px 8px rgba(211, 56, 28, 0.3);
         }
 
         [data-theme="dark"] .navigate-btn {
-            color: #000;
+            color: #fff;
+            /* Keep white for readability on red */
+            box-shadow: 0 2px 8px rgba(255, 107, 107, 0.3);
         }
 
         .navigate-btn:hover {
-            background: var(--accent-hover);
+            opacity: 0.9;
+            transform: translateY(-1px);
         }
 
         /* Custom Map Labels */
@@ -250,9 +350,10 @@
             background: transparent;
             border: none;
             box-shadow: none;
-            font-size: 14px;
-            /* Slightly larger text */
+            font-size: 13px;
             font-weight: 700;
+            font-family: 'Noto Serif TC', serif;
+            /* Serif labels */
             color: var(--label-color);
             text-shadow:
                 2px 0 var(--label-halo),
@@ -266,6 +367,7 @@
             pointer-events: none !important;
             white-space: nowrap;
             margin-top: 8px;
+            letter-spacing: 0.03em;
         }
 
         /* Loading Spinner */
@@ -281,16 +383,16 @@
             justify-content: center;
             align-items: center;
             flex-direction: column;
-            transition: opacity 0.5s ease;
+            transition: opacity 0.6s ease;
         }
 
         .spinner {
             width: 40px;
             height: 40px;
-            border: 4px solid #f3f3f3;
-            border-top: 4px solid var(--accent-color);
+            border: 3px solid rgba(0, 0, 0, 0.1);
+            border-top: 3px solid var(--accent-color);
             border-radius: 50%;
-            animation: spin 1s linear infinite;
+            animation: spin 1s cubic-bezier(0.4, 0, 0.2, 1) infinite;
         }
 
         @keyframes spin {
@@ -305,10 +407,10 @@
 
         /* Current Location Marker */
         .user-pos-marker {
-            background: var(--accent-color);
+            background: var(--highlight-color);
             border: 2px solid #fff;
             border-radius: 50%;
-            box-shadow: 0 0 0 4px rgba(52, 152, 219, 0.3);
+            box-shadow: 0 0 0 4px rgba(211, 56, 28, 0.2);
             width: 16px;
             height: 16px;
         }
@@ -319,7 +421,8 @@
 
     <div id="loading">
         <div class="spinner"></div>
-        <p style="margin-top:16px;color:var(--text-sub);">載入地圖中...</p>
+        <p style="margin-top:20px;color:var(--text-sub);font-family:'Noto Serif TC',serif;letter-spacing:0.1em;">
+            読み込み中...</p>
     </div>
 
     <!-- Filter Buttons -->
@@ -361,7 +464,9 @@
                 "lng": 127.6879713,
                 "region": "南部",
                 "category": "美食",
-                "price": "¥1000-¥3000"
+                "price": "¥1000-¥3000",
+                "description": "沖繩必吃的豬肉蛋飯糰始祖，米飯鬆軟，內餡豐富，是牧志市場的超人氣早餐選擇。",
+                "recommended": "炸蝦豬肉蛋飯糰、島豆腐飯糰"
             },
             {
                 "name": "珀塔瑪 那霸機場國內線到達大廳店",
@@ -369,7 +474,9 @@
                 "lng": 127.6508027,
                 "region": "南部",
                 "category": "美食",
-                "price": "¥1000-¥3000"
+                "price": "¥1000-¥3000",
+                "description": "抵達沖繩後的第一餐首選！現點現做的熱騰騰飯糰，讓旅程有個美好的開始。",
+                "recommended": "炸蝦豬肉蛋飯糰、明太子美乃滋飯糰"
             },
             {
                 "name": "珀塔瑪 那霸機場國際線美食區店",
@@ -377,7 +484,9 @@
                 "lng": 127.6504602,
                 "region": "南部",
                 "category": "美食",
-                "price": "¥1000-¥3000"
+                "price": "¥1000-¥3000",
+                "description": "位於國際線航廈的美食區，回國前打包一份美味飯糰的最佳選擇。",
+                "recommended": "苦瓜天婦羅飯糰"
             },
             {
                 "name": "燒肉王（那覇久茂地店）",
@@ -385,7 +494,9 @@
                 "lng": 127.6820814,
                 "region": "南部",
                 "category": "美食",
-                "price": "¥1000-¥3000"
+                "price": "¥1000-¥3000",
+                "description": "日本知名的連鎖燒肉吃到飽，肉質鮮美，菜色多樣，是高CP值的聚餐好去處。",
+                "recommended": "壺漬橫膈膜、炙燒壽喜燒牛五花"
             },
             {
                 "name": "燒肉王（沖繩日橋店）",
@@ -393,7 +504,9 @@
                 "lng": 127.7186496,
                 "region": "南部",
                 "category": "美食",
-                "price": "¥1000-¥3000"
+                "price": "¥1000-¥3000",
+                "description": "寬敞舒適的燒肉吃到飽餐廳，適合家庭旅遊或多人團體用餐。",
+                "recommended": "國產牛吃到飽方案"
             },
             {
                 "name": "燒肉王（那覇新都心店）",
@@ -401,7 +514,9 @@
                 "lng": 127.6906379,
                 "region": "南部",
                 "category": "美食",
-                "price": "¥1000-¥3000"
+                "price": "¥1000-¥3000",
+                "description": "位於新都心商圈，逛街購物後的最佳補給站，享受大口吃肉的滿足感。",
+                "recommended": "期間限定菜色"
             },
             {
                 "name": "炭火焼肉専門店 牛皇",
@@ -409,7 +524,9 @@
                 "lng": 127.6815803,
                 "region": "南部",
                 "category": "美食",
-                "price": "¥1000-¥3000"
+                "price": "¥1000-¥3000",
+                "description": "講究炭火燒烤的專業燒肉店，提供高品質的牛肉與精緻的日式服務。",
+                "recommended": "特選和牛拼盤、厚切牛舌"
             },
             {
                 "name": "燒肉本部牧場 那霸店",
@@ -417,7 +534,9 @@
                 "lng": 127.6794203,
                 "region": "南部",
                 "category": "美食",
-                "price": "¥1000-¥3000"
+                "price": "¥1000-¥3000",
+                "description": "使用自家牧場直送的新鮮本部牛，肉質鮮嫩多汁，是品嚐沖繩和牛的絕佳選擇。",
+                "recommended": "本部牛豪華拼盤"
             },
             {
                 "name": "燒肉本部牧場 國際通店",
@@ -425,7 +544,9 @@
                 "lng": 127.6811033,
                 "region": "南部",
                 "category": "美食",
-                "price": "¥1000-¥3000"
+                "price": "¥1000-¥3000",
+                "description": "位於繁華的國際通，交通便利，能輕鬆享用頂級的沖繩和牛燒肉。",
+                "recommended": "午間燒肉套餐"
             },
             {
                 "name": "目利銀次 新都心店",
@@ -433,7 +554,9 @@
                 "lng": 127.6928864,
                 "region": "南部",
                 "category": "美食",
-                "price": "¥1000-¥3000"
+                "price": "¥1000-¥3000",
+                "description": "裝潢獨特且氣氛熱鬧的居酒屋，提供產地直送的新鮮海鮮料理。",
+                "recommended": "本日鮮魚六點刺身盛合、海膽醬烤淡菜"
             },
             {
                 "name": "暖暮拉麵 那霸牧志店",
@@ -441,7 +564,9 @@
                 "lng": 127.6873312,
                 "region": "南部",
                 "category": "美食",
-                "price": "¥1000-¥3000"
+                "price": "¥1000-¥3000",
+                "description": "九州豚骨拉麵名店，湯頭濃郁香醇，是沖繩排隊人氣王，必吃宵夜首選。",
+                "recommended": "半熟蛋芝麻蔥花拉麵、烈火拉麵"
             },
             {
                 "name": "暖暮拉麵糸滿店",
@@ -449,7 +574,9 @@
                 "lng": 127.6726852,
                 "region": "南部",
                 "category": "美食",
-                "price": "¥1000-¥3000"
+                "price": "¥1000-¥3000",
+                "description": "位於南部的暖暮分店，停車方便，不用大排長龍也能享用美味的豚骨拉麵。",
+                "recommended": "一口餃子"
             },
             {
                 "name": "琉家拉麵 國際通本店",
@@ -457,7 +584,9 @@
                 "lng": 127.6834725,
                 "region": "南部",
                 "category": "美食",
-                "price": "¥1000-¥3000"
+                "price": "¥1000-¥3000",
+                "description": "主打獨家黑蒜油豚骨湯頭，麵條勁道，深受在地人與遊客喜愛。",
+                "recommended": "琉焦蒜豬骨麵"
             },
             {
                 "name": "Mazemen Mahoroba 台灣乾拌麵",
@@ -465,7 +594,9 @@
                 "lng": 127.687215,
                 "region": "南部",
                 "category": "美食",
-                "price": "¥1000-¥3000"
+                "price": "¥1000-¥3000",
+                "description": "融合日式細緻與台式風味的乾拌麵，辛香料層次豐富，吃過一次就難以忘懷。",
+                "recommended": "台灣乾拌麵 (加辣)"
             },
             {
                 "name": "Marutama味噌飯屋",
@@ -473,7 +604,9 @@
                 "lng": 127.679864,
                 "region": "南部",
                 "category": "美食",
-                "price": "¥1000-¥3000"
+                "price": "¥1000-¥3000",
+                "description": "創業多年的味噌料理專門店，自製味噌湯頭溫潤甘醇，是暖胃的幸福滋味。",
+                "recommended": "味噌定食"
             },
             {
                 "name": "魚屋直營食堂",
@@ -481,7 +614,9 @@
                 "lng": 127.6598479,
                 "region": "南部",
                 "category": "美食",
-                "price": "¥1000-¥3000"
+                "price": "¥1000-¥3000",
+                "description": "由鮮魚店直營的食堂，生魚片新鮮厚切，海鮮丼飯份量十足，CP值極高。",
+                "recommended": "特上鮮魚丼"
             },
             {
                 "name": "Sakanaya Chokuei Shokudo Uomaru",
@@ -489,7 +624,9 @@
                 "lng": 127.6847113,
                 "region": "南部",
                 "category": "美食",
-                "price": "¥1000-¥3000"
+                "price": "¥1000-¥3000",
+                "description": "提供各式新鮮海鮮定食，食材當日直送，是在地人推薦的隱藏版美食。",
+                "recommended": "奶油烤魚定食"
             },
             {
                 "name": "幸福鬆餅",
@@ -497,7 +634,9 @@
                 "lng": 127.640567,
                 "region": "南部",
                 "category": "美食",
-                "price": "¥1000-¥3000"
+                "price": "¥1000-¥3000",
+                "description": "口感如雲朵般鬆軟綿密的舒芙蕾鬆餅，搭配海景露台，享受悠閒的午茶時光。",
+                "recommended": "幸福厚鬆餅、濃厚起司慕斯鬆餅"
             },
             {
                 "name": "浜邊的茶屋",
@@ -505,7 +644,9 @@
                 "lng": 127.7846459,
                 "region": "南部",
                 "category": "美食",
-                "price": "¥1000-¥3000"
+                "price": "¥1000-¥3000",
+                "description": "海景第一排的絕美咖啡廳，窗外就是一望無際的蔚藍大海，非常適合放空療癒。",
+                "recommended": "黑糖戚風蛋糕、洛神花茶"
             },
             {
                 "name": "Okinawa Soba & Cafe Yagiya（屋宜家 やぎや）",
@@ -513,7 +654,9 @@
                 "lng": 127.7369419,
                 "region": "南部",
                 "category": "美食",
-                "price": "¥1000-¥3000"
+                "price": "¥1000-¥3000",
+                "description": "登錄為有形文化財的古民家餐廳，在充滿歷史感的空間中享用道地的沖繩麵。",
+                "recommended": "豆漿軟骨沖繩麵"
             },
             {
                 "name": "Cafe Kurukuma（Cafe薑黃花）",
@@ -521,7 +664,9 @@
                 "lng": 127.8123779,
                 "region": "南部",
                 "category": "美食",
-                "price": "¥1000-¥3000"
+                "price": "¥1000-¥3000",
+                "description": "擁有無敵海景的泰式料理餐廳，香料運用道地，邊吃飯邊看海是最高享受。",
+                "recommended": "綠咖哩雞、泰式炒河粉"
             },
             {
                 "name": "oHacorté Izumizaki",
@@ -529,7 +674,9 @@
                 "lng": 127.6791086,
                 "region": "南部",
                 "category": "美食",
-                "price": "¥1000-¥3000"
+                "price": "¥1000-¥3000",
+                "description": "沖繩知名的人氣水果塔專賣店，塔皮酥脆，水果鮮甜，是完美的甜點伴手禮。",
+                "recommended": "季節水果塔、檸檬蛋糕"
             },
             {
                 "name": "琉球之牛 那霸國際通（3F）",
@@ -537,7 +684,9 @@
                 "lng": 127.6891753,
                 "region": "南部",
                 "category": "美食",
-                "price": "¥1000-¥3000"
+                "price": "¥1000-¥3000",
+                "description": "嚴選頂級肉質的燒肉名店，套餐精緻，能品嚐到入口即化的奢華美味。",
+                "recommended": "頂級縣產和牛套餐"
             },
             {
                 "name": "傑克牛排館",
@@ -545,7 +694,9 @@
                 "lng": 127.6724952,
                 "region": "南部",
                 "category": "美食",
-                "price": "¥1000-¥3000"
+                "price": "¥1000-¥3000",
+                "description": "美軍統治時期流傳下來的老字號牛排館，充滿復古美式風情，深受在地人愛戴。",
+                "recommended": "特選里脊牛排 (Tenderloin Steak)"
             },
             {
                 "name": "中本天婦羅店",
@@ -553,7 +704,9 @@
                 "lng": 127.7721275,
                 "region": "南部",
                 "category": "美食",
-                "price": "¥1000-¥3000"
+                "price": "¥1000-¥3000",
+                "description": "位於奥武島的人氣天婦羅店，現炸的海鮮與蔬菜天婦羅便宜又好吃。",
+                "recommended": "海藻天婦羅、炸魚天婦羅"
             },
             {
                 "name": "大城天婦羅店",
@@ -561,7 +714,9 @@
                 "lng": 127.771141,
                 "region": "南部",
                 "category": "美食",
-                "price": "¥1000-¥3000"
+                "price": "¥1000-¥3000",
+                "description": "奥武島上的另一家天婦羅名店，口感酥脆，適合買一份到海邊邊看貓咪邊享用。",
+                "recommended": "花枝天婦羅"
             },
             {
                 "name": "燒肉王（北谷店）",
@@ -569,7 +724,9 @@
                 "lng": 127.7591385,
                 "region": "中部",
                 "category": "美食",
-                "price": "¥1000-¥3000"
+                "price": "¥1000-¥3000",
+                "description": "鄰近美國村的燒肉吃到飽，交通便利，逛完街來大吃一頓非常過癮。",
+                "recommended": "四大名物燒肉"
             },
             {
                 "name": "燒肉王（沖縄美里店）",
@@ -577,7 +734,9 @@
                 "lng": 127.8241365,
                 "region": "中部",
                 "category": "美食",
-                "price": "¥1000-¥3000"
+                "price": "¥1000-¥3000",
+                "description": "中部地區的熱門燒肉店，提供豐富的肉類選擇與自助吧，適合朋友聚會。",
+                "recommended": "厚切牛舌"
             },
             {
                 "name": "暖暮拉麵 中城店",
@@ -585,7 +744,9 @@
                 "lng": 127.7735419,
                 "region": "中部",
                 "category": "美食",
-                "price": "¥1000-¥3000"
+                "price": "¥1000-¥3000",
+                "description": "中城區域的拉麵好選擇，湯頭穩定，是想吃熱騰騰拉麵時的可靠去處。",
+                "recommended": "叉燒豚骨拉麵"
             },
             {
                 "name": "暖暮拉麵 沖繩美原店",
@@ -593,7 +754,9 @@
                 "lng": 127.8183983,
                 "region": "中部",
                 "category": "美食",
-                "price": "¥1000-¥3000"
+                "price": "¥1000-¥3000",
+                "description": "位於沖繩市的暖暮分店，維持一貫的濃郁豚骨風味，滿足當地的拉麵愛好者。",
+                "recommended": "溏心蛋豚骨拉麵"
             },
             {
                 "name": "暖暮拉麵 北谷砂辺店",
@@ -601,7 +764,9 @@
                 "lng": 127.7450324,
                 "region": "中部",
                 "category": "美食",
-                "price": "¥1000-¥3000"
+                "price": "¥1000-¥3000",
+                "description": "靠近海邊的拉麵店，玩水或潛水後，來一碗熱湯拉麵最能補充體力。",
+                "recommended": "芝麻蔥拉麵"
             },
             {
                 "name": "Houki Boshi 可麗露 港川本店",
@@ -609,7 +774,9 @@
                 "lng": 127.7156565,
                 "region": "中部",
                 "category": "美食",
-                "price": "¥1000-¥3000"
+                "price": "¥1000-¥3000",
+                "description": "港川外人住宅區的甜點名店，黑糖可麗露外脆內軟，造型小巧可愛。",
+                "recommended": "沖繩黑糖可麗露、火龍果可麗露"
             },
             {
                 "name": "oHacorte 港川店",
@@ -617,7 +784,9 @@
                 "lng": 127.7153652,
                 "region": "中部",
                 "category": "美食",
-                "price": "¥1000-¥3000"
+                "price": "¥1000-¥3000",
+                "description": "充滿鄉村風情的超人氣水果塔店，老屋改建的空間氛圍極佳，拍照超美。",
+                "recommended": "綜合水果塔"
             },
             {
                 "name": "雞湯拉麵屋 石工夫",
@@ -625,7 +794,9 @@
                 "lng": 127.7160947,
                 "region": "中部",
                 "category": "美食",
-                "price": "¥1000-¥3000"
+                "price": "¥1000-¥3000",
+                "description": "清爽不油膩的雞白湯拉麵，湯頭鮮甜回甘，是港川外人住宅區的隱藏美味。",
+                "recommended": "特製雞白湯拉麵"
             },
             {
                 "name": "Seaside Cafe Hanon",
@@ -633,7 +804,9 @@
                 "lng": 127.7538499,
                 "region": "中部",
                 "category": "美食",
-                "price": "¥1000-¥3000"
+                "price": "¥1000-¥3000",
+                "description": "美式風格的海景鬆餅店，鬆餅香氣濃郁，還能欣賞美國村的迷人海景。",
+                "recommended": "鹽味焦糖鬆餅"
             },
             {
                 "name": "Taco Rice Cafe Kijimuna",
@@ -641,7 +814,9 @@
                 "lng": 127.7546408,
                 "region": "中部",
                 "category": "美食",
-                "price": "¥1000-¥3000"
+                "price": "¥1000-¥3000",
+                "description": "沖繩靈魂美食塔可飯專賣店，獨創的歐姆蛋塔可飯口感滑嫩，風味十足。",
+                "recommended": "歐姆蛋塔可飯"
             },
             {
                 "name": "Chatan Dunchi",
@@ -649,7 +824,9 @@
                 "lng": 127.7537217,
                 "region": "中部",
                 "category": "美食",
-                "price": "¥1000-¥3000"
+                "price": "¥1000-¥3000",
+                "description": "提供精緻沖繩料理的景觀餐廳，露台座位可以俯瞰美國村的夜景，氣氛浪漫。",
+                "recommended": "阿古豬涮涮鍋"
             },
             {
                 "name": "The Calif Kitchen Okinawa",
@@ -657,7 +834,9 @@
                 "lng": 127.7537565,
                 "region": "中部",
                 "category": "美食",
-                "price": "¥1000-¥3000"
+                "price": "¥1000-¥3000",
+                "description": "充滿西海岸風情的加州料理餐廳，環境明亮舒適，適合享受悠閒的早午餐。",
+                "recommended": "酪梨培根起司堡"
             },
             {
                 "name": "蒸気海鮮 — Chatan Steam Seafood",
@@ -665,7 +844,9 @@
                 "lng": 127.7536892,
                 "region": "中部",
                 "category": "美食",
-                "price": "¥1000-¥3000"
+                "price": "¥1000-¥3000",
+                "description": "以蒸氣烹調保留海鮮原味，食材新鮮，吃得到大海的鮮甜滋味。",
+                "recommended": "蒸氣海鮮套餐"
             },
             {
                 "name": "琉球之牛 北谷店 (美國村)",
@@ -673,7 +854,9 @@
                 "lng": 127.7536529,
                 "region": "中部",
                 "category": "美食",
-                "price": "¥1000-¥3000"
+                "price": "¥1000-¥3000",
+                "description": "美國村內的頂級燒肉店，裝潢時尚，肉質無可挑剔，是慶祝特別日子的好地方。",
+                "recommended": "特上牛五花"
             },
             {
                 "name": "迴轉壽司市場 美浜店",
@@ -681,7 +864,9 @@
                 "lng": 127.7592467,
                 "region": "中部",
                 "category": "美食",
-                "price": "¥1000-¥3000"
+                "price": "¥1000-¥3000",
+                "description": "位於美國村入口的迴轉壽司，食材種類豐富且新鮮，是觀光客的人氣選擇。",
+                "recommended": "鮪魚中腹"
             },
             {
                 "name": "Mother Coffee",
@@ -689,7 +874,9 @@
                 "lng": 127.7812301,
                 "region": "中部",
                 "category": "美食",
-                "price": "¥1000-¥3000"
+                "price": "¥1000-¥3000",
+                "description": "全日本第一家鑄鐵鍋鬆餅專賣店，熱騰騰的鬆餅口感獨特，一定要來嚐鮮。",
+                "recommended": "原味鑄鐵鍋鬆餅"
             },
             {
                 "name": "燒肉本部牧場 本部總店",
@@ -697,7 +884,9 @@
                 "lng": 127.8854215,
                 "region": "北部",
                 "category": "美食",
-                "price": "¥1000-¥3000"
+                "price": "¥1000-¥3000",
+                "description": "鄰近美麗海水族館，提供最新鮮的本部牛燒肉，遊玩北部時的必吃美食。",
+                "recommended": "本部牛拼盤"
             },
             {
                 "name": "燒肉王（名護店）",
@@ -705,7 +894,9 @@
                 "lng": 127.9803616,
                 "region": "北部",
                 "category": "美食",
-                "price": "¥1000-¥3000"
+                "price": "¥1000-¥3000",
+                "description": "名護地區的燒肉吃到飽首選，空間寬敞，停車方便，適合自駕遊旅客。",
+                "recommended": "牛五花"
             },
             {
                 "name": "燒肉本部牧場 名護店",
@@ -713,7 +904,9 @@
                 "lng": 127.9637637,
                 "region": "北部",
                 "category": "美食",
-                "price": "¥1000-¥3000"
+                "price": "¥1000-¥3000",
+                "description": "在名護市也能品嚐到高品質的本部牛，午間套餐CP值高，不容錯過。",
+                "recommended": "骰子牛午餐"
             },
             {
                 "name": "暖暮拉麵 名護店",
@@ -721,7 +914,9 @@
                 "lng": 127.9846708,
                 "region": "北部",
                 "category": "美食",
-                "price": "¥1000-¥3000"
+                "price": "¥1000-¥3000",
+                "description": "前往北部景點途中可以順道停留的拉麵店，快速美味，補充旅途能量。",
+                "recommended": "豚骨拉麵"
             },
             {
                 "name": "琉球の牛 恩納本館",
@@ -729,7 +924,9 @@
                 "lng": 127.8056266,
                 "region": "北部",
                 "category": "美食",
-                "price": "¥1000-¥3000"
+                "price": "¥1000-¥3000",
+                "description": "恩納村的高級燒肉店，提供在地的頂級和牛，享受在度假區的奢華晚餐。",
+                "recommended": "夢幻牛舌"
             },
             {
                 "name": "琉球の牛 恩納別館",
@@ -737,7 +934,9 @@
                 "lng": 127.8038175,
                 "region": "北部",
                 "category": "美食",
-                "price": "¥1000-¥3000"
+                "price": "¥1000-¥3000",
+                "description": "位於本館附近的別館，同樣提供高品質的服務與美味燒肉，環境優雅。",
+                "recommended": "特上和牛里脊"
             },
             {
                 "name": "元祖海葡萄總店",
@@ -745,7 +944,9 @@
                 "lng": 127.8505469,
                 "region": "北部",
                 "category": "美食",
-                "price": "¥1000-¥3000"
+                "price": "¥1000-¥3000",
+                "description": "能品嚐到新鮮爽脆海葡萄的海鮮蓋飯專賣店，是體驗沖繩特色食材的好地方。",
+                "recommended": "海葡萄丼"
             },
             {
                 "name": "Hawaiian Pancakes House Paanilani",
@@ -753,7 +954,9 @@
                 "lng": 127.8722411,
                 "region": "北部",
                 "category": "美食",
-                "price": "¥1000-¥3000"
+                "price": "¥1000-¥3000",
+                "description": "深受當地人喜愛的夏威夷鬆餅店，招牌堅果醬鬆餅香氣十足，份量驚人。",
+                "recommended": "堅果醬鬆餅 (Nuts N' Nuts Pancake)"
             },
             {
                 "name": "Yukino",
@@ -761,15 +964,19 @@
                 "lng": 127.9650345,
                 "region": "北部",
                 "category": "美食",
-                "price": "¥1000-¥3000"
+                "price": "¥1000-¥3000",
+                "description": "名護當地的家庭式居酒屋，料理種類豐富且價格實惠，充滿人情味。",
+                "recommended": "生魚片拼盤、炒苦瓜"
             },
             {
                 "name": "百年古家 大家 阿古豬",
                 "lat": 26.6209963,
-                "lng": 127.9636717,
+                "lng": 127.9637637,
                 "region": "北部",
                 "category": "美食",
-                "price": "¥1000-¥3000"
+                "price": "¥1000-¥3000",
+                "description": "在百年歷史的古民宅中品嚐阿古豬涮涮鍋，還能欣賞庭園瀑布造景，氣氛絕佳。",
+                "recommended": "阿古豬涮涮鍋套餐"
             },
             {
                 "name": "Captain Kangaroo Hamburger",
@@ -777,7 +984,9 @@
                 "lng": 127.8904418,
                 "region": "北部",
                 "category": "美食",
-                "price": "¥1000-¥3000"
+                "price": "¥1000-¥3000",
+                "description": "被譽為沖繩最強漢堡的名店，漢堡多汁厚實，每次去都要做好排隊的準備。",
+                "recommended": "Sparky Burger (特別漢堡)"
             },
             {
                 "name": "海人料理 海邦丸（本店）",
@@ -785,7 +994,9 @@
                 "lng": 127.8836417,
                 "region": "北部",
                 "category": "美食",
-                "price": "¥1000-¥3000"
+                "price": "¥1000-¥3000",
+                "description": "位於Ala Mahaina Condo Hotel內，每日直送的新鮮海鮮定食，美味又方便。",
+                "recommended": "海鮮丼"
             },
             {
                 "name": "海人料理海邦丸（二店）",
@@ -793,7 +1004,9 @@
                 "lng": 127.8776939,
                 "region": "北部",
                 "category": "美食",
-                "price": "¥1000-¥3000"
+                "price": "¥1000-¥3000",
+                "description": "海邦丸的另一據點，同樣提供新鮮美味的海鮮料理，滿足饕客的味蕾。",
+                "recommended": "生魚片定食"
             },
             {
                 "name": "岸本食堂（本店）",
@@ -801,7 +1014,9 @@
                 "lng": 127.8958949,
                 "region": "北部",
                 "category": "美食",
-                "price": "¥1000-¥3000"
+                "price": "¥1000-¥3000",
+                "description": "創業百年的沖繩麵老舖，柴魚湯頭濃郁，麵條口感紮實，是必朝聖的經典名店。",
+                "recommended": "岸本沖繩麵 (手打麵)"
             },
             {
                 "name": "岸本食堂（八重岳店）",
@@ -809,7 +1024,9 @@
                 "lng": 127.9110342,
                 "region": "北部",
                 "category": "美食",
-                "price": "¥1000-¥3000"
+                "price": "¥1000-¥3000",
+                "description": "岸本食堂的分店，擁有寬敞的停車場與座位，適合開車前往的遊客。",
+                "recommended": "多汁炊飯"
             },
             {
                 "name": "古宇利蝦蝦飯",
@@ -817,7 +1034,9 @@
                 "lng": 128.0197864,
                 "region": "北部",
                 "category": "美食",
-                "price": "¥1000-¥3000"
+                "price": "¥1000-¥3000",
+                "description": "來到古宇利島必吃的蒜香蝦飯，餐車起家的人氣美食，蒜味濃厚超級下飯。",
+                "recommended": "蒜香蝦飯 (Original Garlic Shrimp)"
             },
             {
                 "name": "食事処 錦屋",
@@ -825,7 +1044,9 @@
                 "lng": 128.0197426,
                 "region": "北部",
                 "category": "美食",
-                "price": "¥1000-¥3000"
+                "price": "¥1000-¥3000",
+                "description": "古宇利島上的在地食堂，提供家常風味的沖繩料理，價格平實親民。",
+                "recommended": "海膽丼"
             },
             {
                 "name": "Airando Fiji Restaurant & Cafe",
@@ -833,7 +1054,9 @@
                 "lng": 128.0197502,
                 "region": "北部",
                 "category": "美食",
-                "price": "¥1000-¥3000"
+                "price": "¥1000-¥3000",
+                "description": "島上風格獨特的餐廳，提供特色異國料理，是想換換口味時的好選擇。",
+                "recommended": "斐濟咖哩"
             },
             {
                 "name": "Shirasa 食堂",
@@ -841,7 +1064,9 @@
                 "lng": 128.0166389,
                 "region": "北部",
                 "category": "美食",
-                "price": "¥1000-¥3000"
+                "price": "¥1000-¥3000",
+                "description": "古宇利島著名的海膽蓋飯食堂，季節限定的新鮮海膽鮮甜美味，老饕必訪。",
+                "recommended": "海膽丼 (季節限定)"
             },
             {
                 "name": "海人料理 亀ぬ浜",
@@ -849,7 +1074,9 @@
                 "lng": 127.857863,
                 "region": "北部",
                 "category": "美食",
-                "price": "¥1000-¥3000"
+                "price": "¥1000-¥3000",
+                "description": "位於萬座毛附近的海鮮餐廳，能一邊欣賞海景一邊品嚐新鮮的海產料理。",
+                "recommended": "海葡萄海鮮丼"
             },
             {
                 "name": "海人食堂",
@@ -857,7 +1084,9 @@
                 "lng": 127.7235703,
                 "region": "北部",
                 "category": "美食",
-                "price": "¥1000-¥3000"
+                "price": "¥1000-¥3000",
+                "description": "讀谷村漁港旁的食堂，以豪邁的海鮮丼聞名，食材新鮮度沒話說。",
+                "recommended": "海人丼"
             },
             {
                 "name": "披薩喫茶 花人逢",
@@ -865,7 +1094,9 @@
                 "lng": 127.9007959,
                 "region": "北部",
                 "category": "美食",
-                "price": "¥1000-¥3000"
+                "price": "¥1000-¥3000",
+                "description": "位於半山腰的古民家披薩店，可以俯瞰絕美海景，招牌披薩起司牽絲超誘人。",
+                "recommended": "手工披薩、西印度櫻桃汁"
             },
             {
                 "name": "King Tacos 金武本店",
@@ -873,7 +1104,9 @@
                 "lng": 127.9172771,
                 "region": "北部",
                 "category": "美食",
-                "price": "¥1000-¥3000"
+                "price": "¥1000-¥3000",
+                "description": "塔可飯的發源地，份量驚人的塔可飯與塔可餅，是體驗沖繩美式文化的必吃美食。",
+                "recommended": "塔可飯起司蔬菜 (Taco Rice Cheese Vegetable)"
             },
             {
                 "name": "山原蕎麥麵",
@@ -881,7 +1114,9 @@
                 "lng": 127.9494745,
                 "region": "北部",
                 "category": "美食",
-                "price": "¥1000-¥3000"
+                "price": "¥1000-¥3000",
+                "description": "名護地區的老字號排骨麵店，排骨燉煮到軟嫩入味，湯頭鮮美，每日限量賣完為止。",
+                "recommended": "排骨沖繩麵 (Soki Soba)"
             }
         ];
 
@@ -916,22 +1151,21 @@
             setTimeout(() => document.getElementById('loading').remove(), 500);
         }
 
-        // --- NEW: Price Color Logic ---
+        // --- Price Color Logic ---
         function getMarkerColor(priceStr) {
-            // Default Blue
-            let color = "#3498db";
+            // Default: Indigo for normal price
+            let color = "#1e3b79";
             if (document.body.getAttribute('data-theme') === 'dark') color = "#64b5f6";
 
             if (!priceStr) return color;
 
-            // Extract first number found
             const match = priceStr.match(/\d+/);
             if (match) {
                 const price = parseInt(match[0], 10);
                 if (price < 1000) {
-                    return "#2ecc71"; // Green (Cheap)
+                    return "#2e7d32"; // Bamboo Green (Cheap)
                 } else if (price >= 3000) {
-                    return "#e74c3c"; // Red (Expensive)
+                    return "#d3381c"; // Vermilion (Expensive)
                 }
             }
             return color;
@@ -944,11 +1178,16 @@
 
             data.forEach(item => {
                 const color = getMarkerColor(item.price);
+                const theme = document.body.getAttribute('data-theme');
+
+                // Adjust base color for dark mode readability if needed
+                let finalColor = color;
+                if (theme === 'dark' && color === '#1e3b79') finalColor = '#64b5f6';
 
                 const marker = L.circleMarker([item.lat, item.lng], {
                     radius: 7,
-                    fillColor: color,
-                    color: "#fff",
+                    fillColor: finalColor,
+                    color: "#fff", // Keep white stroke for contrast
                     weight: 2,
                     opacity: 1,
                     fillOpacity: 0.95
@@ -975,9 +1214,9 @@
         }
 
         function createPopupContent(item) {
-            // Use specific navigation URL schema for better app opening
-            // Universal Link that works well on both iOS and Android to open Maps app
             const googleMapsLink = `https://www.google.com/maps/dir/?api=1&destination=${item.lat},${item.lng}&destination_place_id=${encodeURIComponent(item.name)}`;
+            const desc = item.description || "這是一間值得一試的好餐廳！";
+            const rec = item.recommended ? `<div class="popup-rec"><i class="fas fa-thumbs-up"></i> 必點：${item.recommended}</div>` : "";
 
             return `
                 <div class="popup-header">
@@ -987,14 +1226,17 @@
                     </div>
                 </div>
                 <div class="popup-body">
+                    <p class="popup-desc">${desc}</p>
+                    ${rec}
                     <div class="popup-row">
                         <i class="fas fa-utensils"></i> ${item.category}
                     </div>
                     <div class="popup-row">
-                        <i class="fas fa-yen-sign"></i> ${item.price}
+                        <i class="fas fa-yen-sign"></i> 
+                        <span class="popup-price">${item.price}</span>
                     </div>
                     <a href="${googleMapsLink}" target="_blank" class="navigate-btn">
-                        <i class="fas fa-location-arrow"></i> 導航去這裡
+                        <i class="fas fa-location-arrow"></i> ここへ行く (導航)
                     </a>
                 </div>
             `;
@@ -1019,8 +1261,6 @@
                 tileLayer.setUrl(tiles.light);
             }
 
-            // Re-render to update marker colors (Blue changes shade in dark mode)
-            // Cheap enough to strict re-render
             const region = document.querySelector('.filter-btn.active').dataset.filter;
             if (region === 'all') renderMarkers(restaurantsData);
             else renderMarkers(restaurantsData.filter(i => i.region === region));
@@ -1068,7 +1308,7 @@
 
                     userMarker = L.marker([lat, lng], { icon: userIcon }).addTo(map);
 
-                    const themeColor = document.body.getAttribute('data-theme') === 'dark' ? '#64b5f6' : '#3498db';
+                    const themeColor = document.body.getAttribute('data-theme') === 'dark' ? '#64b5f6' : '#d3381c';
                     L.circle([lat, lng], { radius: acc, color: themeColor, fillOpacity: 0.1 }).addTo(map);
 
                     map.flyTo([lat, lng], 13, { duration: 1.5 });
