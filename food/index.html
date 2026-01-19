@@ -18,6 +18,13 @@
         href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&family=Roboto:wght@400;500;700&display=swap"
         rel="stylesheet">
 
+    <!-- PWA Manifest -->
+    <link rel="manifest" href="manifest.json">
+    <link rel="icon" href="icon.png" type="image/png">
+    <meta name="theme-color" content="#007AFF">
+    <link rel="apple-touch-icon" href="icon.png">
+
+
     <style>
         :root {
             --primary-color: #007AFF;
@@ -487,7 +494,8 @@
         }
 
         .leaflet-tooltip {
-            pointer-events: none;
+            pointer-events: auto !important;
+            cursor: pointer !important;
         }
 
         .leaflet-tooltip-top:before,
@@ -495,6 +503,124 @@
         .leaflet-tooltip-left:before,
         .leaflet-tooltip-right:before {
             border: none !important;
+        }
+
+        /* Card Scroll View */
+        .card-scroll-view {
+            position: absolute;
+            bottom: var(--safe-area-bottom);
+            left: 0;
+            width: 100%;
+            height: auto;
+            display: flex;
+            overflow-x: auto;
+            scroll-snap-type: x mandatory;
+            padding: 0 16px 16px 16px;
+            gap: 12px;
+            z-index: 2000;
+            pointer-events: auto;
+            /* Hide scrollbar */
+            scrollbar-width: none;
+            -ms-overflow-style: none;
+        }
+
+        .card-scroll-view::-webkit-scrollbar {
+            display: none;
+        }
+
+        .card-item {
+            flex: 0 0 85%;
+            /* Mobile width */
+            max-width: 320px;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border-radius: 20px;
+            overflow: hidden;
+            scroll-snap-align: center;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+            cursor: pointer;
+            border: 1px solid rgba(255, 255, 255, 0.5);
+            display: flex;
+            flex-direction: row;
+            /* Horizontal layout */
+            height: 100px;
+        }
+
+        .card-item:active {
+            transform: scale(0.98);
+        }
+
+        .card-img {
+            width: 100px;
+            height: 100%;
+            object-fit: cover;
+            flex-shrink: 0;
+            background-color: #eee;
+        }
+
+        .card-info {
+            flex: 1;
+            padding: 10px 12px;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            min-width: 0;
+            /* Text truncation fix */
+        }
+
+        .card-top {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 2px;
+        }
+
+        .card-title {
+            font-size: 16px;
+            font-weight: 700;
+            color: var(--text-main);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            margin-right: 4px;
+        }
+
+        .card-dist {
+            font-size: 12px;
+            color: var(--primary-color);
+            background: rgba(0, 122, 255, 0.1);
+            padding: 2px 6px;
+            border-radius: 8px;
+            font-weight: 600;
+            flex-shrink: 0;
+        }
+
+        .card-body-text {
+            font-size: 13px;
+            color: var(--text-sub);
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+            line-height: 1.4;
+        }
+
+        .card-highlight {
+            color: var(--danger);
+            font-weight: 500;
+            font-size: 12px;
+            margin-top: auto;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        /* Adjust Locate Button Position */
+        .btn-locate {
+            bottom: calc(var(--safe-area-bottom) + 130px);
+            /* Move above cards */
         }
     </style>
 </head>
@@ -529,6 +655,10 @@
                 <div class="pill" data-filter="南部">南部</div>
                 <div class="pill" data-filter="飯店">飯店</div>
             </div>
+        </div>
+
+        <div class="card-scroll-view" id="card-container">
+            <!-- Cards will be injected here -->
         </div>
 
         <button class="btn-locate" id="btn-locate"><i class="fas fa-crosshairs"></i></button>
@@ -603,6 +733,9 @@
             // Filter Delegation
             document.getElementById('filter-list').addEventListener('click', (e) => {
                 if (e.target.classList.contains('pill')) {
+                    // Clear search when changing filter to avoid "Name + Category" conflict
+                    document.getElementById('search-input').value = '';
+
                     document.querySelectorAll('.pill').forEach(p => p.classList.remove('active'));
                     e.target.classList.add('active');
                     applyFilter();
@@ -631,19 +764,23 @@
             const getIdx = (...ns) => { for (let n of ns) if (colMap[n] !== undefined) return colMap[n]; return -1; };
 
             const idx = {
-                region: getIdx('region', '地區'),
-                name: getIdx('name', '店名', '店家名稱'),
-                cat: getIdx('category', '種類', '分類'),
-                price: getIdx('price', 'price', '預算'),
-                must: getIdx('must_order', 'must', '推薦菜色', '必點'),
-                desc: getIdx('description', 'desc', '介紹', '心得'),
-                addr1: getIdx('address', '地址', 'address'), // Explicit Address Column
-                addr2: getIdx('map', 'map code'),             // Map Column (Fallback)
-                link: getIdx('link', 'gmap_link', '連結'),
-                lat: getIdx('lat', 'latitude'),
-                lng: getIdx('lng', 'longitude'),
-                img: getIdx('image', 'img', '照片', '圖片')   // New Image Column
+                // More robust mapping with synonyms
+                region: getIdx('region', '地區', '區域', 'area', '地域'),
+                name: getIdx('name', '店名', '店家名稱', 'title', '店鋪', '名稱'),
+                cat: getIdx('category', '種類', '分類', 'type', 'class'),
+                price: getIdx('price', 'price', '預算', 'cost'),
+                must: getIdx('must_order', 'must', '推薦菜色', '必點', 'recommend'),
+                desc: getIdx('description', 'desc', '介紹', '心得', 'note', 'content'),
+                addr1: getIdx('address', '地址', 'address', '店址', '住址', '住所', '地點', '位置', 'location', 'addr'),
+                addr2: getIdx('map', 'map code', 'mapcode', 'google map', '地圖'),
+                link: getIdx('link', 'gmap_link', '連結', 'url', 'website'),
+                lat: getIdx('lat', 'latitude', '緯度'),
+                lng: getIdx('lng', 'longitude', '經度'),
+                img: getIdx('image', 'img', '照片', '圖片', 'pic', 'photo')   // New Image Column
             };
+
+            let uidCounter = 0; // Unique ID Generator
+
 
             const data = json.table.rows.map(row => {
                 const c = row.c;
@@ -755,21 +892,30 @@
                     addr: displayAddr,
                     link: displayLink,
                     img: img,
-                    lat, lng
+                    link: displayLink,
+                    img: img,
+                    lat, lng,
+                    _uid: `item-${uidCounter++}` // Assign UI ID
                 };
             }).filter(x => x);
+
 
             allData = data;
             window.allData = data; // Keep both for safety/debugging
 
             // Render valid ones first
-            renderMarkers(data.filter(d => d.lat && d.lng));
+            // Render valid ones first
+            const validData = data.filter(d => d.lat && d.lng);
+            renderMarkers(validData);
+            renderCards(validData);
             removeLoading();
+
 
             // Kick off auto-geocoding for missing ones
             geocodeMissingItems(data);
             reverseGeocodeItems(data);
         };
+
 
         async function geocodeMissingItems(data) {
             const missing = data.filter(d => (!d.lat || !d.lng) && d.addr);
@@ -862,11 +1008,10 @@
                     const result = await res.json();
 
                     if (result && result.display_name) {
-                        // Cleanup address: retain specificity but maybe shorten?
-                        // For now use full address to be safe.
+                        // Cleanup address: retain specificity
                         item.addr = result.display_name;
+                        // Always update cache (even if overwriting 'Loading...')
                         localStorage.setItem(cacheKey, result.display_name);
-                        // Force update UI
                         applyFilter(true);
                     }
                 } catch (e) {
@@ -901,13 +1046,33 @@
 
                 const marker = L.marker([item.lat, item.lng], { icon: customIcon });
 
-                // Add Label logic (custom markers don't support bindTooltip strictly same as circleMarker sometimes, but usually fine)
-                marker.bindTooltip(item.name, {
+                // Add Label logic
+                // Explicitly create tooltip to attach event
+                const tt = L.tooltip({
                     permanent: true,
                     direction: 'top',
                     offset: [0, -32],
                     className: 'map-label',
-                    interactive: false
+                    interactive: true
+                }).setContent(item.name);
+
+                // Add click listener to tooltip DOM node after it's added
+                // Leaflet doesn't have a direct 'click' event on Tooltip class in all versions, 
+                // but interactive:true should allow map click to pass through or be caught.
+                // We will rely on DOM event propagation.
+
+                marker.bindTooltip(tt);
+
+                // Workaround: When tooltip is clicked, open popup
+                marker.on('tooltipopen', function (e) {
+                    const tooltipNode = e.tooltip._container;
+                    if (tooltipNode) {
+                        tooltipNode.style.pointerEvents = 'auto'; // Double insurance
+                        tooltipNode.onclick = function (evt) {
+                            evt.stopPropagation();
+                            marker.openPopup();
+                        };
+                    }
                 });
 
                 // App-Style Popup
@@ -932,14 +1097,20 @@
                             ${item.must ? `<div class="info-row must-order" style="margin-bottom:8px;"><i class="fas fa-star" style="color:#FF9500;"></i> <span style="font-weight:bold; color:#FF3B30;">必點：${item.must}</span></div>` : ''}
                             
                             <!-- Always show address if available -->
-                            ${item.addr ? `
+                            <!-- Always show address row if we have addr OR lat/lng -->
                             <div class="info-row" style="color:#666; font-size:13px; margin-bottom:12px; display:flex; align-items:start;">
                                 <i class="fas fa-map-marker-alt" style="margin-right:6px; margin-top:3px; flex-shrink:0;"></i> 
-                                <span style="flex:1; line-height:1.4;">${item.addr}</span>
-                                <button onclick="copyToClipboard('${item.addr.replace(/'/g, "\\'")}')" style="background:none; border:none; color:#007AFF; cursor:pointer; padding:0 8px; margin-left:4px;">
+                                <span id="addr-text-${item._uid}" style="flex:1; line-height:1.4;">${item.addr || '地址讀取中...'}</span>
+                                ${item.addr ? `
+                                <button onclick="window.copyToClipboard('${item.addr.replace(/'/g, "\\'")}')" style="background:none; border:none; color:#007AFF; cursor:pointer; padding:0 8px; margin-left:4px;">
+                                <button onclick="window.copyToClipboard('${item.addr.replace(/'/g, "\\'")}')" style="background:none; border:none; color:#007AFF; cursor:pointer; padding:0 8px; margin-left:4px;">
                                     <i class="far fa-copy"></i>
                                 </button>
-                            </div>` : ''}
+                                <button onclick="window.forceRefreshAddress('${item._uid}', ${item.lat}, ${item.lng})" style="background:none; border:none; color:#34C759; cursor:pointer; padding:0 8px;" title="重新讀取地址">
+                                    <i class="fas fa-sync-alt"></i>
+                                </button>` : ''}
+                            </div>
+
 
                             <div class="desc" style="margin-bottom:16px; font-size:14px; color:#333; line-height:1.5;">${item.desc && item.desc !== item.addr ? item.desc : ""}</div>
                             
@@ -950,18 +1121,132 @@
                     </div>
                 `;
 
+                // Sync Card Selection on Popup Open
+                marker.on('popupopen', () => {
+                    const cardId = `card-${item._uid}`;
+                    const card = document.getElementById(cardId);
+                    if (card) {
+                        card.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+                        // Highlight
+                        document.querySelectorAll('.card-item').forEach(c => c.style.borderColor = 'rgba(255, 255, 255, 0.5)');
+                        card.style.borderColor = '#007AFF';
+                    }
+
+                    // On-Demand Geocoding if address is missing
+                    if (!item.addr && item.lat && item.lng) {
+                        resolveAddress(item).then(foundAddr => {
+                            if (foundAddr) {
+                                const span = document.getElementById(`addr-text-${item._uid}`);
+                                if (span) span.textContent = foundAddr;
+                                // Note: Copy button won't appear until re-open, but text is key.
+                            }
+                        });
+                    }
+                });
+
+
+
                 marker.bindPopup(html);
                 markersCluster.addLayer(marker);
             });
         }
 
-        window.copyToClipboard = function (text) {
-            navigator.clipboard.writeText(text).then(() => {
-                showToast("地址已複製");
-            }).catch(err => {
-                console.error('Failed to copy: ', err);
-            });
+        async function resolveAddress(item) {
+            const cacheKey = `geo_addr_${item.lat}_${item.lng}`;
+            const cached = localStorage.getItem(cacheKey);
+            if (cached) {
+                item.addr = cached;
+                return cached;
+            }
+
+            try {
+                const url = `https://nominatim.openstreetmap.org/reverse?format=json&lat=${item.lat}&lon=${item.lng}`;
+                const res = await fetch(url);
+                const result = await res.json();
+                if (result && result.display_name) {
+                    item.addr = result.display_name;
+                    localStorage.setItem(cacheKey, result.display_name);
+                    return result.display_name;
+                }
+            } catch (e) {
+                console.error("Resolve address failed", e);
+            }
+            return null;
+        }
+
+        window.forceRefreshAddress = async function (uid, lat, lng) {
+            const span = document.getElementById(`addr-text-${uid}`);
+            if (span) {
+                span.innerHTML = '<i class="fas fa-spinner fa-spin"></i> 讀取中...';
+            }
+
+            const cacheKey = `geo_addr_${lat}_${lng}`;
+            localStorage.removeItem(cacheKey); // Clear Cache
+
+            try {
+                const url = `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}`;
+                const res = await fetch(url);
+                const result = await res.json();
+
+                if (result && result.display_name) {
+                    // Update Cache
+                    localStorage.setItem(cacheKey, result.display_name);
+
+                    // Update Text Directly
+                    if (span) span.textContent = result.display_name;
+
+                    // Update Item Data in Background (Loop through allData)
+                    // Note: UID is string, checking match
+                    const target = window.allData.find(d => String(d._uid) === String(uid));
+                    if (target) target.addr = result.display_name;
+
+                    showToast("地址已更新！");
+                }
+            } catch (e) {
+                alert("更新失敗，請稍後再試");
+            }
         };
+
+
+        window.copyToClipboard = function (text) {
+            // Modern API (HTTPS only)
+            if (navigator.clipboard && window.isSecureContext) {
+                navigator.clipboard.writeText(text).then(() => {
+                    showToast("地址已複製");
+                }).catch(err => {
+                    console.error('Failed to copy: ', err);
+                    fallbackCopyTextToClipboard(text);
+                });
+            } else {
+                // Fallback for HTTP / Mobile Dev
+                fallbackCopyTextToClipboard(text);
+            }
+        };
+
+        function fallbackCopyTextToClipboard(text) {
+            const textArea = document.createElement("textarea");
+            textArea.value = text;
+
+            // Ensure it's not visible but part of DOM
+            textArea.style.position = "fixed";
+            textArea.style.left = "-9999px";
+            textArea.style.top = "0";
+            document.body.appendChild(textArea);
+
+            textArea.focus();
+            textArea.select();
+
+            try {
+                const successful = document.execCommand('copy');
+                if (successful) showToast("地址已複製");
+                else showToast("複製失敗");
+            } catch (err) {
+                console.error('Fallback copy failed', err);
+                showToast("複製失敗");
+            }
+
+            document.body.removeChild(textArea);
+        }
 
         function showToast(message) {
             let toast = document.getElementById('toast-msg');
@@ -990,7 +1275,8 @@
 
             setTimeout(() => {
                 toast.style.opacity = '0';
-            }, 2000);
+            }, 4000);
+
         }
 
         function applyFilter(skipZoom) {
@@ -1022,13 +1308,17 @@
                 return matchFilter && matchSearch;
             });
 
-            renderMarkers(filtered);
+            // Safely filter valid coordinates for map operations
+            const validGeoItems = filtered.filter(d => d.lat && d.lng);
+            renderMarkers(validGeoItems);
+            renderCards(filtered); // Cards can show even if no lat/lng (will show '---')
             updateSearchResults(filtered, searchVal);
+
 
             // Auto fit bounds (Only if NOT skipped)
             if (!skipZoom) {
-                if (filtered.length > 0 && (activeFilter !== 'all' || searchVal)) {
-                    const bounds = L.latLngBounds(filtered.map(d => [d.lat, d.lng]));
+                if (validGeoItems.length > 0 && (activeFilter !== 'all' || searchVal)) {
+                    const bounds = L.latLngBounds(validGeoItems.map(d => [d.lat, d.lng]));
                     map.fitBounds(bounds, { padding: [50, 50], maxZoom: 15 });
                 } else if (activeFilter === 'all' && !searchVal) {
                     map.setView([26.4, 127.9], 10);
@@ -1074,6 +1364,100 @@
             }, 500);
         };
 
+        // --- CARDS LOGIC ---
+        function renderCards(data) {
+            const container = document.getElementById('card-container');
+            // DOM Diffing / Sync to prevent flickering
+
+            const newIds = new Set(data.map(d => `card-${d._uid}`));
+
+            // 1. Remove old items not in new set
+            Array.from(container.children).forEach(child => {
+                if (!newIds.has(child.id)) {
+                    child.remove();
+                }
+            });
+
+            // 2. Add or Move items
+            data.forEach(item => {
+                const cardId = `card-${item._uid}`;
+                let card = document.getElementById(cardId);
+
+                // Update Data if needed (e.g. distance) - for now just existence check
+                if (!card) {
+                    // Create New
+                    const img = item.img || getFallbackImage(item.category);
+                    const desc = item.must ? `必點：${item.must}` : (item.desc || item.addr);
+                    const nameEsc = item.name.replace(/'/g, "\\'");
+
+                    card = document.createElement('div');
+                    card.className = 'card-item';
+                    card.id = cardId;
+                    card.onclick = () => selectResult(item.lat, item.lng, nameEsc);
+
+                    card.innerHTML = `
+                        <img src="${img}" class="card-img" loading="lazy" alt="${item.name}">
+                        <div class="card-info">
+                            <div class="card-top">
+                                <div class="card-title">${item.name}</div>
+                                <div class="card-dist" data-lat="${item.lat}" data-lng="${item.lng}">---</div>
+                            </div>
+                            <div class="card-body-text">${item.category} · ${item.region}</div>
+                            <div class="card-highlight">${desc}</div>
+                        </div>
+                    `;
+                    container.appendChild(card);
+                } else {
+                    // Update potentially changed props (like lat/lng if geocoded)
+                    const distEl = card.querySelector('.card-dist');
+                    if (item.lat && item.lng) {
+                        distEl.dataset.lat = item.lat;
+                        distEl.dataset.lng = item.lng;
+                    }
+                    // Re-append to ensure order matches 'data' list
+                    container.appendChild(card);
+                }
+            });
+
+            // If we already have user location (global), update distances
+            if (window.currentUserLat && window.currentUserLng) {
+                updateCardDistances(window.currentUserLat, window.currentUserLng);
+            }
+        }
+
+
+        function updateCardDistances(lat, lng) {
+            window.currentUserLat = lat;
+            window.currentUserLng = lng;
+
+            document.querySelectorAll('.card-dist').forEach(el => {
+                const destLat = parseFloat(el.dataset.lat);
+                const destLng = parseFloat(el.dataset.lng);
+                if (!isNaN(destLat) && !isNaN(destLng)) {
+                    const dist = getDistanceFromLatLonInKm(lat, lng, destLat, destLng);
+                    el.textContent = dist < 1 ? `${Math.round(dist * 1000)}m` : `${dist.toFixed(1)}km`;
+                }
+            });
+        }
+
+        function getDistanceFromLatLonInKm(lat1, lon1, lat2, lon2) {
+            const R = 6371; // Radius of earth in km
+            const dLat = deg2rad(lat2 - lat1);
+            const dLon = deg2rad(lon2 - lon1);
+            const a =
+                Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+                Math.cos(deg2rad(lat1)) * Math.cos(deg2rad(lat2)) *
+                Math.sin(dLon / 2) * Math.sin(dLon / 2);
+            const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+            const d = R * c; // Distance in km
+            return d;
+        }
+
+        function deg2rad(deg) {
+            return deg * (Math.PI / 180);
+        }
+
+
         // --- UTILS ---
         function removeLoading() {
             const el = document.getElementById('loading');
@@ -1091,6 +1475,8 @@
                         icon: L.divIcon({ html: '<div style="width:12px;height:12px;background:#007AFF;border:2px solid #fff;border-radius:50%;box-shadow:0 0 10px rgba(0,122,255,0.5);"></div>', className: '' })
                     }).addTo(map);
                     map.flyTo([latitude, longitude], 13);
+                    updateCardDistances(latitude, longitude);
+
                 },
                 (err) => alert("定位失敗: " + err.message)
             );
@@ -1098,6 +1484,16 @@
 
         // kick off
         initApp();
+
+        // PWA Registration
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('./sw.js')
+                    .then(reg => console.log('SW Registered!', reg))
+                    .catch(err => console.log('SW Failed:', err));
+            });
+        }
+
 
         function getCategoryIcon(category) {
             const cat = (category || "").toLowerCase();
